@@ -24,6 +24,31 @@ module.exports = function(RED) {
     return Promise.resolve();
   }
 
+  function checkConnection(connectionNode) {
+    var errorMsg = '';
+    //var connString = settings.dbConnectionString();
+
+    if (!connectionNode) {
+      errorMsg = 'No Configuration Found';
+    } else if (!connectionNode.host) {
+      errorMsg = 'No Host set in configuration';
+    } else if (!connectionNode.accesskey) {
+      errorMsg = 'No Access Key set in configuration';
+    } else if (!connectionNode.instanceid) {
+      errorMsg = 'No Access Key set in configuration';
+    } else if (!connectionNode.username) {
+      errorMsg = 'No Username set in configuration';
+    } else if (!connectionNode.password) {
+      errorMsg = 'No Password set in configuration';
+    }
+
+    if (errorMsg) {
+      return Promise.reject(errorMsg);
+    }
+    return Promise.resolve();
+  }
+
+
   function doSomething() {
     var p = new Promise(function resolver(resolve, reject) {
       reject('nothing yet implemented');
@@ -61,6 +86,9 @@ module.exports = function(RED) {
       start(msg, config)
         .then( () => {
           return checkForParameters(msg, config);
+        })
+        .then( () => {
+          return checkConnection(node.connectionNode);
         })
         .then( () => {
           node.status({ fill: 'blue', shape: 'dot', text: 'doing something' });
