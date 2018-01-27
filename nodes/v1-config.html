@@ -30,8 +30,12 @@
     </div>
 
     <div class="form-row">
-        <label for="node-config-input-host"><i class="fa fa-bookmark"></i> Host</label>
+        <label for="node-config-input-host"><i class="fa fa-bookmark"></i> Host URL</label>
         <input class="input-append-left" type="text" id="node-config-input-host">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-accesskey"><i class="fa fa-lock"></i> Access Key</label>
+        <input class="input-append-left" type="text" id="node-config-input-accesskey">
     </div>
 
 
@@ -43,6 +47,7 @@
         color: "rgb(180, 50, 50)",
         defaults: {
             host: {value:"", required:true},
+            accesskey: {value:"", required:true},
             name: {value:""}
         },
         credentials: {
