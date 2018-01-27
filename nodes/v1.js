@@ -65,6 +65,10 @@ module.exports = function(RED) {
   }
       }, (error, response, body) => {
         if (!error && response.statusCode == 200) {
+          var b = JSON.parse(body);
+          if (b.token) {
+            token = 'Bearer ' + b.token;
+          }
           resolve(token);
         } else if (error) {
           reject(error);
