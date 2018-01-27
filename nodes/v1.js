@@ -15,6 +15,7 @@
  **/
 
 module.exports = function(RED) {
+  const request = require('request');
 
   function start(msg, config) {
     return Promise.resolve();
@@ -46,6 +47,33 @@ module.exports = function(RED) {
       return Promise.reject(errorMsg);
     }
     return Promise.resolve();
+  }
+
+
+  function getToken(connectionNode, token) {
+
+    var p = new Promise(function resolver(resolve, reject){
+      var token = null;
+      var uriAddress = connectionNode.host + '/v3/identity/token';
+
+      request({
+        uri: uriAddress,
+        method: 'GET',
+        auth: {
+          user: connectionNode.username,
+          pass: connectionNode.password
+  }
+      }, (error, response, body) => {
+        if (!error && response.statusCode == 200) {
+          resolve(token);
+        } else if (error) {
+          reject(error);
+        } else {
+          reject('Access Token Error ' + response.statusCode);
+        }
+      });
+    });
+    return p;
   }
 
 
@@ -82,6 +110,7 @@ module.exports = function(RED) {
       node.status({ fill: 'blue', shape: 'dot', text: 'initialising' });
 
       var connection = null;
+      var token = null;
 
       start(msg, config)
         .then( () => {
@@ -91,6 +120,11 @@ module.exports = function(RED) {
           return checkConnection(node.connectionNode);
         })
         .then( () => {
+          node.status({ fill: 'blue', shape: 'dot', text: 'requesting token' });
+          return getToken(node.connectionNode);
+        })
+        .then( (t) => {
+          token = t;
           node.status({ fill: 'blue', shape: 'dot', text: 'doing something' });
           return doSomething();
         })
