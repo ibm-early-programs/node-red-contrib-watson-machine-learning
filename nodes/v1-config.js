@@ -20,6 +20,8 @@
      RED.nodes.createNode(this, config);
 
      this.host = config.host;
+     this.accesskey = config.accesskey;     
+     this.instanceid = config.instanceid;
 
      var credentials = this.credentials;
 
