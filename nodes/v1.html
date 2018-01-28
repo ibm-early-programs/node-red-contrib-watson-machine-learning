@@ -26,6 +26,15 @@
       </select>
   </div>
 
+  <div class="form-row">
+      <label for="node-input-wml-mode"><i class="fa fa-book"></i> Mode: </label>
+      <select type="text" id="node-input-wml-mode" style="display: inline-block; width: 70%;">
+          <option value="instanceDetails">Service Instance Details</option>
+          <option value="runPrediction">Run Prediction</option>          
+      </select>
+  </div>
+
+
 </script>
 
 <script type="text/x-red" data-help-name="wml">
@@ -44,12 +53,69 @@
 </style>
 
 <script type="text/javascript">
+
+// Need to simulate a namespace, as some of the variables had started to leak across nodes
+  function WML01 () {
+  }
+
+  var wml01 = new WML01();
+
+  wml01.showSelectedFields = function(fields) {
+    for (i = 0; i < fields.length; i++) {
+      $(fields[i]).parent().show();
+    }
+  }
+
+  wml01.hideSelectedFields = function(fields) {
+    for (i = 0; i < fields.length; i++) {
+      $(fields[i]).parent().hide();
+    }
+  }
+
+  wml01.hideEverything = function () {
+    var fields = [];
+
+    //fields.push('#node-input-cwm-workspace-id'
+    //                 + ', #node-input-cwm-service-endpoint');
+
+    wml01.hideSelectedFields(fields);
+  }
+
+  wml01.processSelectedMethod = function(method) {
+    var fields = [];
+
+    wml01.hideEverything();
+
+    switch (method) {
+      case 'instanceDetails':
+        break;
+    }
+    wml01.showSelectedFields(fields);
+  }
+
+  // Register the handlers for the fields
+  wml01.handlersUI = function () {
+    $('#node-input-wml-mode').change(function() {
+      wml01.processSelectedMethod($('#node-input-wml-mode').val());
+    });
+  }
+
+  function wml01oneditprepare() {
+    wml01.hideEverything();
+    wml01.handlersUI();
+  }
+
+  function wml01oneditsave(){
+  }
+
+
   (function() {
     RED.nodes.registerType('wml', {
       category: 'IBM Watson',
       defaults: {
         name: { value: '' },
-        connection: { value:"", type:"wml-config" }
+        connection: { value: '', type: 'wml-config' },
+        'wml-mode': {value: 'runPrediction'}
       },
       credentials: {
       },
@@ -63,7 +129,9 @@
       },
       labelStyle: function() {
         return this.name ? 'node_label_italic node_label_white' : 'node_label_white';
-      }
+      },
+      oneditprepare: wml01oneditprepare,
+      oneditsave: wml01oneditsave
     });
   })();
 </script>

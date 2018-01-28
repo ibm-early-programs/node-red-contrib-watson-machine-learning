@@ -21,7 +21,15 @@ module.exports = function(RED) {
     return Promise.resolve();
   }
 
-  function checkForParameters(msg, config) {
+  function checkForParameters(msg, config, m) {
+    var message = '';
+
+    if (!m || '' === m) {
+      message = 'Required mode has not been specified';
+    }
+    if (message){
+      return Promise.reject(message);
+    }
     return Promise.resolve();
   }
 
@@ -62,12 +70,13 @@ module.exports = function(RED) {
         auth: {
           user: connectionNode.username,
           pass: connectionNode.password
-  }
+        }
       }, (error, response, body) => {
         if (!error && response.statusCode == 200) {
           var b = JSON.parse(body);
           if (b.token) {
-            token = 'Bearer ' + b.token;
+            //token = 'Bearer ' + b.token;
+            token = b.token;
           }
           resolve(token);
         } else if (error) {
@@ -80,6 +89,55 @@ module.exports = function(RED) {
     return p;
   }
 
+  function executeInstanceDetails(cn, t) {
+    var p = new Promise(function resolver(resolve, reject){
+      var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid;
+
+      request({
+        uri: uriAddress,
+        method: 'GET',
+        auth: {
+          'bearer': t
+        }
+      }, (error, response, body) => {
+        if (!error && response.statusCode == 200) {
+          data = JSON.parse(body);
+          resolve(data);
+        } else if (error) {
+          reject(error);
+        } else {
+          reject('Error getting instance details ' + response.statusCode);
+        }
+      });
+    });
+    return p;
+  }
+
+
+  function executeUnknownMethod(cn, t) {
+    return Promise.reject('Unable to process as unknown mode has been specified');
+  }
+
+  function executeMethod(method, cn, t) {
+    var p = null;
+    var f = null;
+
+    switch (method) {
+    case 'instanceDetails':
+      f = executeInstanceDetails;
+      break;
+    default:
+      f = executeUnknownMethod;
+      break;
+    }
+    p = f(cn, t);
+    return p;
+  }
+
+  function processResponse(msg, data) {
+    msg.payload = data;
+    return Promise.resolve();
+  }
 
   function doSomething() {
     var p = new Promise(function resolver(resolve, reject) {
@@ -115,10 +173,11 @@ module.exports = function(RED) {
 
       var connection = null;
       var token = null;
+      var method = config['wml-mode'];
 
       start(msg, config)
         .then( () => {
-          return checkForParameters(msg, config);
+          return checkForParameters(msg, config, method);
         })
         .then( () => {
           return checkConnection(node.connectionNode);
@@ -129,8 +188,12 @@ module.exports = function(RED) {
         })
         .then( (t) => {
           token = t;
-          node.status({ fill: 'blue', shape: 'dot', text: 'doing something' });
-          return doSomething();
+          node.status({ fill: 'blue', shape: 'dot', text: 'executing' });
+          return executeMethod(method, node.connectionNode, token);
+        })
+        .then( (data) => {
+          node.status({ fill: 'blue', shape: 'dot', text: 'processing response' });
+          return processResponse(msg, data);
         })
         .then(function() {
           node.status({});
