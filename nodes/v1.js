@@ -32,6 +32,7 @@ module.exports = function(RED) {
       case 'getModelDetails':
       case 'listModelMetrics':
       case 'listLearningIterations':
+      case 'listModelDeployments':
         if (!config.model) {
           message = 'No Model Specified for get Model Details Method'
         } else {
@@ -156,6 +157,18 @@ module.exports = function(RED) {
     return executeRequest(uriAddress, t);
   }
 
+  function executeListModelDeployments(cn, t, params) {
+    var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
+                              + '/published_models/' + params.model
+                              + '/deployments';
+
+    console.log('****************');
+    console.log('Running against uri :', uriAddress);
+
+
+    return executeRequest(uriAddress, t);
+  }
+
   function executeUnknownMethod(cn, t, params) {
     return Promise.reject('Unable to process as unknown mode has been specified');
   }
@@ -168,8 +181,12 @@ module.exports = function(RED) {
       'listModels': executeListModels,
       'getModelDetails' : executeGetModelDetails,
       'listModelMetrics' : executeListModelMetrics,
-      'listLearningIterations' : executeListLearningIterations
+      'listLearningIterations' : executeListLearningIterations,
+      'listModelDeployments' : executeListModelDeployments
     }
+
+    console.log('-----------------');
+    console.log('Method is : ', method);
 
     f = execute[method] || executeUnknownMethod
     p = f(cn, t, params);

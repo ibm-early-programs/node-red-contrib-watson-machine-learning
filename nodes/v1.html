@@ -36,6 +36,8 @@
           <option value="listModelMetrics">List Model Metrics</option>
           <option value="listLearningIterations">List Model Learning Iterations</option>
           <option disabled>______________</option>
+          <option value="listModelDeployments">List Model Deployments</option>
+          <option disabled>______________</option>
           <option value="runPrediction">Run Prediction</option>
       </select>
   </div>
@@ -112,6 +114,7 @@
       case 'getModelDetails':
       case 'listModelMetrics':
       case 'listLearningIterations':
+      case 'listModelDeployments':
         fields.push('#node-input-model'
                    + ', #node-input-flushcache');
         break;
