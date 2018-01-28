@@ -89,10 +89,8 @@ module.exports = function(RED) {
     return p;
   }
 
-  function executeInstanceDetails(cn, t) {
+  function executeRequest(uriAddress, t) {
     var p = new Promise(function resolver(resolve, reject){
-      var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid;
-
       request({
         uri: uriAddress,
         method: 'GET',
@@ -106,13 +104,23 @@ module.exports = function(RED) {
         } else if (error) {
           reject(error);
         } else {
-          reject('Error getting instance details ' + response.statusCode);
+          reject('Error performing request ' + response.statusCode);
         }
       });
     });
     return p;
   }
 
+
+  function executeInstanceDetails(cn, t) {
+    var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid;
+    return executeRequest(uriAddress, t);
+  }
+
+  function executeListModels(cn, t) {
+    var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid + '/published_models';
+    return executeRequest(uriAddress, t);
+  }
 
   function executeUnknownMethod(cn, t) {
     return Promise.reject('Unable to process as unknown mode has been specified');
@@ -121,15 +129,12 @@ module.exports = function(RED) {
   function executeMethod(method, cn, t) {
     var p = null;
     var f = null;
-
-    switch (method) {
-    case 'instanceDetails':
-      f = executeInstanceDetails;
-      break;
-    default:
-      f = executeUnknownMethod;
-      break;
+    const execute = {
+      'instanceDetails' : executeInstanceDetails,
+      'listModels': executeListModels
     }
+
+    f = execute[method] || executeUnknownMethod
     p = f(cn, t);
     return p;
   }

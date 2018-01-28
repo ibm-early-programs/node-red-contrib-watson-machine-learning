@@ -30,7 +30,10 @@
       <label for="node-input-wml-mode"><i class="fa fa-book"></i> Mode: </label>
       <select type="text" id="node-input-wml-mode" style="display: inline-block; width: 70%;">
           <option value="instanceDetails">Service Instance Details</option>
-          <option value="runPrediction">Run Prediction</option>          
+          <option disabled>______________</option>
+          <option value="listModels">List Published Models</option>
+          <option disabled>______________</option>
+          <option value="runPrediction">Run Prediction</option>
       </select>
   </div>
 
@@ -88,6 +91,7 @@
 
     switch (method) {
       case 'instanceDetails':
+      case 'listModels':
         break;
     }
     wml01.showSelectedFields(fields);
