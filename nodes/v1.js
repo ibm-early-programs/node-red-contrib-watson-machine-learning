@@ -30,6 +30,7 @@ module.exports = function(RED) {
 
     switch (m) {
       case 'getModelDetails':
+      case 'listModelMetrics':
         if (!config.model) {
           message = 'No Model Specified for get Model Details Method'
         } else {
@@ -140,6 +141,13 @@ module.exports = function(RED) {
     return executeRequest(uriAddress, t);
   }
 
+  function executeListModelMetrics(cn, t, params) {
+    var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
+                              + '/published_models/' + params.model
+                              + '/evaluation_metrics';
+    return executeRequest(uriAddress, t);
+  }
+
   function executeUnknownMethod(cn, t, params) {
     return Promise.reject('Unable to process as unknown mode has been specified');
   }
@@ -150,7 +158,8 @@ module.exports = function(RED) {
     const execute = {
       'instanceDetails' : executeInstanceDetails,
       'listModels': executeListModels,
-      'getModelDetails' : executeGetModelDetails
+      'getModelDetails' : executeGetModelDetails,
+      'listModelMetrics' : executeListModelMetrics
     }
 
     f = execute[method] || executeUnknownMethod
