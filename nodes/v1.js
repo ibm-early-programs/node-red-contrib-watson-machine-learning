@@ -21,12 +21,23 @@ module.exports = function(RED) {
     return Promise.resolve();
   }
 
-  function checkForParameters(msg, config, m) {
+  function checkForParameters(msg, config, m, params) {
     var message = '';
 
     if (!m || '' === m) {
       message = 'Required mode has not been specified';
     }
+
+    switch (m) {
+      case 'getModelDetails':
+        if (!config.model) {
+          message = 'No Model Specified for get Model Details Method'
+        } else {
+          params['model'] = config.model;
+        }
+        break;
+    }
+
     if (message){
       return Promise.reject(message);
     }
@@ -112,36 +123,64 @@ module.exports = function(RED) {
   }
 
 
-  function executeInstanceDetails(cn, t) {
+  function executeInstanceDetails(cn, t, params) {
     var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid;
     return executeRequest(uriAddress, t);
   }
 
-  function executeListModels(cn, t) {
-    var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid + '/published_models';
+  function executeListModels(cn, t, params) {
+    var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
+                              + '/published_models';
     return executeRequest(uriAddress, t);
   }
 
-  function executeUnknownMethod(cn, t) {
+  function executeGetModelDetails(cn, t, params) {
+    var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
+                              + '/published_models/' + params.model;
+    return executeRequest(uriAddress, t);
+  }
+
+  function executeUnknownMethod(cn, t, params) {
     return Promise.reject('Unable to process as unknown mode has been specified');
   }
 
-  function executeMethod(method, cn, t) {
+  function executeMethod(method, cn, t, params) {
     var p = null;
     var f = null;
     const execute = {
       'instanceDetails' : executeInstanceDetails,
-      'listModels': executeListModels
+      'listModels': executeListModels,
+      'getModelDetails' : executeGetModelDetails
     }
 
     f = execute[method] || executeUnknownMethod
-    p = f(cn, t);
+    p = f(cn, t, params);
     return p;
   }
 
   function processResponse(msg, data) {
     msg.payload = data;
     return Promise.resolve();
+  }
+
+  function buildModelArray(data) {
+    models = [];
+    resources = data.resources;
+
+    if (resources) {
+      resources.forEach((e) => {
+        var m = {};
+        if (e.metadata && e.metadata.guid) {
+          m['guid'] = e.metadata.guid;
+          if (e.entity && e.entity.name) {
+            m['name'] = e.entity.name;
+            models.push(m);
+          }
+        }
+      });
+    }
+
+    return Promise.resolve(models);
   }
 
   function doSomething() {
@@ -167,6 +206,33 @@ module.exports = function(RED) {
     node.error(messageTxt, msg);
   }
 
+
+
+  // API used by widget to fetch available models
+  RED.httpAdmin.get('/wml/models', function (req, res) {
+    var connection = req.query.cn;
+    var cn = RED.nodes.getNode(connection);
+    var myToken = null;
+
+    checkConnection(cn)
+      .then( () => {
+        return getToken(cn);
+      })
+      .then( (t) => {
+        myToken = t;
+        return executeMethod('listModels', cn, myToken, {});
+      })
+      .then( (data) => {
+        return buildModelArray(data);
+      })
+      .then( (models) => {
+        res.json({models:models});
+      })
+      .catch(function(err) {
+        res.json({error:'Not able to fetch models'});
+      });
+  });
+
   function Node(config) {
     var node = this;
     RED.nodes.createNode(this, config);
@@ -179,10 +245,11 @@ module.exports = function(RED) {
       var connection = null;
       var token = null;
       var method = config['wml-mode'];
+      var params = {};
 
       start(msg, config)
         .then( () => {
-          return checkForParameters(msg, config, method);
+          return checkForParameters(msg, config, method, params);
         })
         .then( () => {
           return checkConnection(node.connectionNode);
@@ -194,7 +261,7 @@ module.exports = function(RED) {
         .then( (t) => {
           token = t;
           node.status({ fill: 'blue', shape: 'dot', text: 'executing' });
-          return executeMethod(method, node.connectionNode, token);
+          return executeMethod(method, node.connectionNode, token, params);
         })
         .then( (data) => {
           node.status({ fill: 'blue', shape: 'dot', text: 'processing response' });

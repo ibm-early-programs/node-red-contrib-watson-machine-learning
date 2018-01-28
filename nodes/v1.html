@@ -32,9 +32,22 @@
           <option value="instanceDetails">Service Instance Details</option>
           <option disabled>______________</option>
           <option value="listModels">List Published Models</option>
+          <option value="getModelDetails">Get Model Details</option>
           <option disabled>______________</option>
           <option value="runPrediction">Run Prediction</option>
       </select>
+  </div>
+
+  <div class="form-row">
+      <label for="node-input-model"><i class="fa fa-comments-o"></i> Model</label>
+      <select type="text" id="node-input-model" style="display: inline-block; vertical-align:middle; width: 70%;">
+      </select>
+  </div>
+
+  <div class="form-row">
+      <label>&nbsp;</label>
+      <input type="button" id="node-input-flushcache" value="Refetch Model List"
+               style="display: inline-block; width: auto; vertical-align: top;">
   </div>
 
 
@@ -62,6 +75,7 @@
   }
 
   var wml01 = new WML01();
+  wml01.models = null;
 
   wml01.showSelectedFields = function(fields) {
     for (i = 0; i < fields.length; i++) {
@@ -78,8 +92,8 @@
   wml01.hideEverything = function () {
     var fields = [];
 
-    //fields.push('#node-input-cwm-workspace-id'
-    //                 + ', #node-input-cwm-service-endpoint');
+    fields.push('#node-input-model'
+                    + ', #node-input-flushcache');
 
     wml01.hideSelectedFields(fields);
   }
@@ -93,8 +107,17 @@
       case 'instanceDetails':
       case 'listModels':
         break;
+      case 'getModelDetails':
+        fields.push('#node-input-model'
+                   + ', #node-input-flushcache');
+        break;
     }
     wml01.showSelectedFields(fields);
+  }
+
+  wml01.flushCache = function () {
+    wml01.models = null;
+    wml01oneditprepare();
   }
 
   // Register the handlers for the fields
@@ -102,11 +125,51 @@
     $('#node-input-wml-mode').change(function() {
       wml01.processSelectedMethod($('#node-input-wml-mode').val());
     });
+
+    $('#node-input-flushcache').click(function () {
+      wml01.flushCache();
+    });
+  }
+
+  wml01.rebuildModelList = function () {
+    // Flush out the list first
+    $('select#node-input-model').empty()
+    wml01.models.forEach( function (m) {
+      $('select#node-input-model')
+        .append('<option value='
+                      + '"' + m.guid + '"'
+                      + '>'
+                      + m.name
+                      + '</option>');
+    })
+  }
+
+
+  wml01.fetchModels = function () {
+    var cn = $('#node-input-connection').val();
+    var connection = {cn: cn};
+
+    if (!wml01.models) {
+      $.getJSON('wml/models/', connection)
+      .done(function (data) {
+        if (data.models) {
+          wml01.models = data.models;
+          wml01.rebuildModelList();
+        }
+      }).fail(function (err) {
+        console.log(err);
+      }).always(function () {});
+    }
   }
 
   function wml01oneditprepare() {
     wml01.hideEverything();
     wml01.handlersUI();
+    if (wml01.models) {
+      wml01.rebuildModelList();
+    } else {
+      wml01.fetchModels();
+    }
   }
 
   function wml01oneditsave(){
@@ -119,7 +182,8 @@
       defaults: {
         name: { value: '' },
         connection: { value: '', type: 'wml-config' },
-        'wml-mode': {value: 'runPrediction'}
+        'wml-mode': {value: 'runPrediction'},
+        model: {value: ''}
       },
       credentials: {
       },
