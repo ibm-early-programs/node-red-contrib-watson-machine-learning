@@ -1,0 +1,66 @@
+<!--
+  Copyright 2017 IBM Corp.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<script type="text/x-red" data-template-name="wml-config">
+    <div class="form-row">
+        <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-config-input-name" placeholder="Name">
+    </div>
+
+    <div class="form-row">
+        <label for="node-config-input-username"><i class="fa fa-user"></i> Username</label>
+        <input type="text" id="node-config-input-username">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-password"><i class="fa fa-lock"></i> Password</label>
+        <input type="password" id="node-config-input-password">
+    </div>
+
+    <div class="form-row">
+        <label for="node-config-input-host"><i class="fa fa-bookmark"></i> Host URL</label>
+        <input class="input-append-left" type="text" id="node-config-input-host">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-accesskey"><i class="fa fa-lock"></i> Access Key</label>
+        <input class="input-append-left" type="text" id="node-config-input-accesskey">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-instanceid"><i class="fa fa-id-badge"></i> Instance ID</label>
+        <input class="input-append-left" type="text" id="node-config-input-instanceid">
+    </div>
+
+
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType("wml-config",{
+        category: "config",
+        color: "rgb(180, 50, 50)",
+        defaults: {
+            host: {value:"", required:true},
+            accesskey: {value:"", required:true},
+            instanceid: {value:"", required:true},
+            name: {value:""}
+        },
+        credentials: {
+            username: {type:"text"},
+            password: {type:"password"}
+        },
+        label: function() {
+            return this.name || this.host;
+        }
+    });
+</script>
