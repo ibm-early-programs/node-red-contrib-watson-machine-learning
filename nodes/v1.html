@@ -65,8 +65,119 @@
 </script>
 
 <script type="text/x-red" data-help-name="wml">
-  <p>Description will go here
+  <p>This is a node-red wrapper for the GET and POST data retrieval and
+  run prediction methods of the Watson Machine Learning service.
   </p>
+
+  <p>For more information about the service API,
+  goto <a href="http://watson-ml-api.mybluemix.net">API Documentation
+  </a>.</p>
+
+  <p>The following methods are supported
+    <ul>
+      <li>Service Instance Details
+        <p>In this mode details for the specified machine learning instance is
+          returned on
+          <code>msg.payload</code>
+        </p>
+      </li>
+
+      <li>List Published Models
+        <p>In this mode a list of all published models for the
+          specified machine learning instancce is
+          returned on
+          <code>msg.payload</code>
+        </p>
+      </li>
+
+      <li>Get Model Details
+        <p>In this mode details of the selected model is
+          returned on
+          <code>msg.payload</code>
+        </p>
+        <p>A list of available published models is displayed in the node
+        configuration dialog, for you to select which model to run
+        this query against.
+        </p>
+      </li>
+
+      <li>List Model Metrics
+        <p>In this mode metrics for the selected model are
+          returned on
+          <code>msg.payload</code>
+        </p>
+        <p>A list of available published models is displayed in the node
+        configuration dialog, for you to select which model to run
+        this query against.
+        </p>
+      </li>
+
+      <li>List Model Learning Iterations
+        <p>In this mode details of the learning Iterations
+         for the selected model are
+          returned on
+          <code>msg.payload</code>
+        </p>
+        <p>A list of available published models is displayed in the node
+          configuration dialog, for you to select which model to run
+          this query against.
+        </p>
+      </li>
+
+      <li>List Model Deployments
+        <p>In this mode a list of the deployments
+         for the selected model are
+          returned on
+          <code>msg.payload</code>
+        </p>
+        <p>A list of available published models is displayed in the node
+          configuration dialog, for you to select which model to run
+          this query against.
+        </p>
+      </li>
+
+      <li>Get Deployment Details
+        <p>In this mode details for the selected deployment is
+          returned on
+          <code>msg.payload</code>
+        </p>
+        <p>Lists of available published models and Deployments
+          are displayed in the node
+          configuration dialog, for you to select which deployment to run
+          this query against.
+        </p>
+      </li>
+
+      <li>Run Prediction
+        <p>In this mode a prediction is run against the selected deployment.
+          The prediction is returned on
+          <code>msg.payload</code>
+        </p>
+
+        <p>The data values to run the prediction against should be passed as
+          an array in
+          <code>msg.payload</code>.
+          <p>
+            EG. Run prediction against one set of values
+            <code>msg.payload = [[16.4, 48.3, 30, 75.4, 28.9, 20]];</code>
+          </p>
+          <p>
+            EG. Run prediction against two set of values
+            <code>msg.payload = [[16.4, 48.3, 30, 75.4, 28.9, 20], [13.4, 38.3, 30, 75.4, 18.9, 25]];</code>
+          </p>
+          The number of values in the array, must match the expected inputs for your
+          machine learning model.         
+        </p>
+        <p>Lists of available published models and Deployments
+          are displayed in the node
+          configuration dialog, for you to select which deployment to run
+          this query against.
+        </p>
+      </li>
+
+    </ul>
+  </p>
+
 </script>
 
 <style type="text/css">
