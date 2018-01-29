@@ -30,8 +30,9 @@ module.exports = function(RED) {
 
     switch (m) {
       case 'getDeploymentDetails':
+      case 'runPrediction':
         if (!config.deployment) {
-          message = 'No Deployment Specified for get Model Deployment Details Method'
+          message = 'No Deployment Specified for Deployment related Method'
         } else {
           params['deployment'] = config.deployment;
         }
@@ -41,7 +42,7 @@ module.exports = function(RED) {
       case 'listLearningIterations':
       case 'listModelDeployments':
         if (!config.model) {
-          message = 'No Model Specified for get Model Details Method'
+          message = 'No Model Specified for Model related Method'
         } else {
           params['model'] = config.model;
         }
@@ -132,6 +133,30 @@ module.exports = function(RED) {
     return p;
   }
 
+  function executePostRequest(uriAddress, t) {
+    var p = new Promise(function resolver(resolve, reject){
+      console.log('**************');
+      console.log('Running Predictor on :', uriAddress);
+      request({
+        uri: uriAddress,
+        method: 'POST',
+        auth: {
+          'bearer': t
+        },
+        body: JSON.stringify({"values": [[16.4, 48.3, 30, 75.4, 28.9, 20]]})
+      }, (error, response, body) => {
+        if (!error && response.statusCode == 200) {
+          data = JSON.parse(body);
+          resolve(data);
+        } else if (error) {
+          reject(error);
+        } else {
+          reject('Error performing request ' + response.statusCode);
+        }
+      });
+    });
+    return p;
+  }
 
   function executeInstanceDetails(cn, t, params) {
     var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid;
@@ -178,6 +203,14 @@ module.exports = function(RED) {
     return executeRequest(uriAddress, t);
   }
 
+  function executeRunPrediction(cn, t, params) {
+    var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
+                              + '/published_models/' + params.model
+                              + '/deployments/' + params.deployment
+                              + '/online';
+    return executePostRequest(uriAddress, t);
+  }
+
   function executeUnknownMethod(cn, t, params) {
     return Promise.reject('Unable to process as unknown mode has been specified');
   }
@@ -192,7 +225,8 @@ module.exports = function(RED) {
       'listModelMetrics' : executeListModelMetrics,
       'listLearningIterations' : executeListLearningIterations,
       'listModelDeployments' : executeListModelDeployments,
-      'getDeploymentDetails' :executeGetDeploymentDetails
+      'getDeploymentDetails' : executeGetDeploymentDetails,
+      'runPrediction' : executeRunPrediction
     }
 
     f = execute[method] || executeUnknownMethod
