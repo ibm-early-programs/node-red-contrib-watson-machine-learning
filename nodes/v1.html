@@ -1,0 +1,403 @@
+<!--
+  Copyright 2018 IBM Corp.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<script type="text/x-red" data-template-name="wml">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+
+  <div class="form-row">
+      <label for="node-input-connection"><i class="fa fa-folder-close"></i> WML Connection</label>
+      <select id="node-input-connection" style="width:68%;">
+      </select>
+  </div>
+
+  <div class="form-row">
+      <label for="node-input-wml-mode"><i class="fa fa-book"></i> Mode: </label>
+      <select type="text" id="node-input-wml-mode" style="display: inline-block; width: 70%;">
+          <option value="instanceDetails">Service Instance Details</option>
+          <option disabled>______________</option>
+          <option value="listModels">List Published Models</option>
+          <option value="getModelDetails">Get Model Details</option>
+          <option value="listModelMetrics">List Model Metrics</option>
+          <option value="listLearningIterations">List Model Learning Iterations</option>
+          <option disabled>______________</option>
+          <option value="listModelDeployments">List Model Deployments</option>
+          <option value="getDeploymentDetails">Get Deployment Details</option>
+          <option disabled>______________</option>
+          <option value="runPrediction">Run Prediction</option>
+      </select>
+  </div>
+
+  <div class="form-row">
+      <label for="node-input-model"><i class="fa fa-comments-o"></i> Model</label>
+      <select type="text" id="node-input-model" style="display: inline-block; vertical-align:middle; width: 70%;">
+      </select>
+  </div>
+
+  <div class="form-row">
+      <label for="node-input-deployment"><i class="fa fa-comments-o"></i> Deployments</label>
+      <select type="text" id="node-input-deployment" style="display: inline-block; vertical-align:middle; width: 70%;">
+      </select>
+  </div>
+
+  <div class="form-row">
+      <label>&nbsp;</label>
+      <input type="button" id="node-input-flushcache" value="Refetch Model List"
+               style="display: inline-block; width: auto; vertical-align: top;">
+  </div>
+
+
+</script>
+
+<script type="text/x-red" data-help-name="wml">
+  <p>This is a node-red wrapper for the GET and POST data retrieval and
+  run prediction methods of the Watson Machine Learning service.
+  </p>
+
+  <p>For more information about the service API,
+  goto <a href="http://watson-ml-api.mybluemix.net">API Documentation
+  </a>.</p>
+
+  <p>The following methods are supported
+    <ul>
+      <li>Service Instance Details
+        <p>In this mode details for the specified machine learning instance is
+          returned on
+          <code>msg.payload</code>
+        </p>
+      </li>
+
+      <li>List Published Models
+        <p>In this mode a list of all published models for the
+          specified machine learning instancce is
+          returned on
+          <code>msg.payload</code>
+        </p>
+      </li>
+
+      <li>Get Model Details
+        <p>In this mode details of the selected model is
+          returned on
+          <code>msg.payload</code>
+        </p>
+        <p>A list of available published models is displayed in the node
+        configuration dialog, for you to select which model to run
+        this query against.
+        </p>
+      </li>
+
+      <li>List Model Metrics
+        <p>In this mode metrics for the selected model are
+          returned on
+          <code>msg.payload</code>
+        </p>
+        <p>A list of available published models is displayed in the node
+        configuration dialog, for you to select which model to run
+        this query against.
+        </p>
+      </li>
+
+      <li>List Model Learning Iterations
+        <p>In this mode details of the learning Iterations
+         for the selected model are
+          returned on
+          <code>msg.payload</code>
+        </p>
+        <p>A list of available published models is displayed in the node
+          configuration dialog, for you to select which model to run
+          this query against.
+        </p>
+      </li>
+
+      <li>List Model Deployments
+        <p>In this mode a list of the deployments
+         for the selected model are
+          returned on
+          <code>msg.payload</code>
+        </p>
+        <p>A list of available published models is displayed in the node
+          configuration dialog, for you to select which model to run
+          this query against.
+        </p>
+      </li>
+
+      <li>Get Deployment Details
+        <p>In this mode details for the selected deployment is
+          returned on
+          <code>msg.payload</code>
+        </p>
+        <p>Lists of available published models and Deployments
+          are displayed in the node
+          configuration dialog, for you to select which deployment to run
+          this query against.
+        </p>
+      </li>
+
+      <li>Run Prediction
+        <p>In this mode a prediction is run against the selected deployment.
+          The prediction is returned on
+          <code>msg.payload</code>
+        </p>
+
+        <p>The data values to run the prediction against should be passed as
+          an array in
+          <code>msg.payload</code>.
+          <p>
+            EG. Run prediction against one set of values
+            <code>msg.payload = [[16.4, 48.3, 30, 75.4, 28.9, 20]];</code>
+          </p>
+          <p>
+            EG. Run prediction against two set of values
+            <code>msg.payload = [[16.4, 48.3, 30, 75.4, 28.9, 20], [13.4, 38.3, 30, 75.4, 18.9, 25]];</code>
+          </p>
+          The number of values in the array, must match the expected inputs for your
+          machine learning model.         
+        </p>
+        <p>Lists of available published models and Deployments
+          are displayed in the node
+          configuration dialog, for you to select which deployment to run
+          this query against.
+        </p>
+      </li>
+
+    </ul>
+  </p>
+
+</script>
+
+<style type="text/css">
+  .node_label_white {
+    fill: white;
+  }
+
+  #palette_node_wml>div.palette_label {
+    color: white;
+  }
+</style>
+
+<script type="text/javascript">
+
+// Need to simulate a namespace, as some of the variables had started to leak across nodes
+  function WML01 () {
+  }
+
+  var wml01 = new WML01();
+  wml01.models = null;
+
+  wml01.showSelectedFields = function(fields) {
+    for (i = 0; i < fields.length; i++) {
+      $(fields[i]).parent().show();
+    }
+  }
+
+  wml01.hideSelectedFields = function(fields) {
+    for (i = 0; i < fields.length; i++) {
+      $(fields[i]).parent().hide();
+    }
+  }
+
+  wml01.hideEverything = function () {
+    var fields = [];
+
+    fields.push('#node-input-model'
+                    + ', #node-input-deployment'
+                    + ', #node-input-flushcache');
+
+    wml01.hideSelectedFields(fields);
+  }
+
+  wml01.processSelectedModel = function(model) {
+    var found = false;
+
+    if (wml01.models) {
+      wml01.models.forEach (function(m) {
+        if (m.guid === model && m.deployments) {
+          found = true;
+        }
+      });
+      if (!found) {
+        wml01.fetchDeployments(model);
+      } else {
+        wml01.populateDeploymentList(model);
+      }
+    }
+  }
+
+  wml01.processSelectedMethod = function(method) {
+    var fields = [];
+
+    wml01.hideEverything();
+
+    switch (method) {
+      case 'instanceDetails':
+      case 'listModels':
+        break;
+      case 'runPrediction':
+      case 'getDeploymentDetails':
+        fields.push('#node-input-deployment');
+        // deliberate no break
+      case 'getModelDetails':
+      case 'listModelMetrics':
+      case 'listLearningIterations':
+      case 'listModelDeployments':
+        fields.push('#node-input-model'
+                   + ', #node-input-flushcache');
+        break;
+    }
+    wml01.showSelectedFields(fields);
+  }
+
+  wml01.flushCache = function () {
+    wml01.models = null;
+    wml01oneditprepare();
+  }
+
+  // Register the handlers for the fields
+  wml01.handlersUI = function () {
+    $('#node-input-wml-mode').change(function() {
+      wml01.processSelectedMethod($('#node-input-wml-mode').val());
+    });
+
+    $('#node-input-model').change(function() {
+      wml01.processSelectedModel($('#node-input-model').val());
+    });
+
+    $('#node-input-flushcache').click(function () {
+      wml01.flushCache();
+    });
+  }
+
+  wml01.rebuildModelList = function () {
+    // Flush out the list first
+    $('select#node-input-model').empty()
+    wml01.models.forEach( function (m) {
+      $('select#node-input-model')
+        .append('<option value='
+                      + '"' + m.guid + '"'
+                      + '>'
+                      + m.name
+                      + '</option>');
+    })
+    wml01.processSelectedMethod($('#node-input-wml-mode').val());
+  }
+
+  wml01.fetchModels = function () {
+    var cn = $('#node-input-connection').val();
+    var connection = {cn: cn};
+
+    if (!wml01.models) {
+      $.getJSON('wml/models/', connection)
+        .done(function (data) {
+          if (data.models) {
+            wml01.models = data.models;
+            wml01.rebuildModelList();
+          }
+        }).fail(function (err) {
+          console.log(err);
+        }).always(function () {});
+    }
+  }
+
+  wml01.modelIndex = function (model) {
+    var pos = -1;
+    if (wml01.models) {
+      wml01.models.forEach (function(m, i) {
+        if (m.guid === model) {
+          pos = i;
+        }
+      });
+    }
+    return pos;
+  }
+
+  wml01.fetchDeployments = function (model) {
+    var cn = $('#node-input-connection').val();
+    var connection = {cn: cn, model: model};
+
+    $.getJSON('wml/deployments/', connection)
+      .done(function (data) {
+        if (data.deployments) {
+          var pos = wml01.modelIndex(model);
+          if (pos >= 0) {
+            wml01.models[pos]['deployments'] = data.deployments;
+          }
+          wml01.populateDeploymentList(model);
+        }
+      }).fail(function (err) {
+        console.log(err);
+      }).always(function () {});
+  }
+
+  wml01.populateDeploymentList = function (model) {
+    $('select#node-input-deployment').empty();
+    var pos = wml01.modelIndex(model);
+    if (pos >= 0) {
+      // Flush out the list first
+      wml01.models[pos]['deployments'].forEach( function (d) {
+        $('select#node-input-deployment')
+          .append('<option value='
+                        + '"' + d.guid + '"'
+                        + '>'
+                        + d.name
+                        + '</option>');
+      })
+    }
+  }
+
+  function wml01oneditprepare() {
+    wml01.hideEverything();
+    wml01.handlersUI();
+    if (wml01.models) {
+      wml01.rebuildModelList();
+    } else {
+      wml01.fetchModels();
+    }
+  }
+
+  function wml01oneditsave(){
+  }
+
+
+  (function() {
+    RED.nodes.registerType('wml', {
+      category: 'IBM Watson',
+      defaults: {
+        name: { value: '' },
+        connection: { value: '', type: 'wml-config' },
+        'wml-mode': {value: 'runPrediction'},
+        model: {value: ''},
+        deployment: {value: ''}
+      },
+      credentials: {
+      },
+      color: 'rgb(150,50,150)',
+      inputs: 1,
+      outputs: 1,
+      paletteLabel: 'WML',
+      icon: 'file.png',
+      label: function() {
+        return this.name || 'wml';
+      },
+      labelStyle: function() {
+        return this.name ? 'node_label_italic node_label_white' : 'node_label_white';
+      },
+      oneditprepare: wml01oneditprepare,
+      oneditsave: wml01oneditsave
+    });
+  })();
+</script>
