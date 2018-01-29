@@ -32,7 +32,7 @@ module.exports = function(RED) {
       case 'getDeploymentDetails':
       case 'runPrediction':
         if (!config.deployment) {
-          message = 'No Deployment Specified for Deployment related Method'
+          message = 'No Deployment Specified for Deployment related Method';
         } else {
           params['deployment'] = config.deployment;
         }
@@ -42,9 +42,28 @@ module.exports = function(RED) {
       case 'listLearningIterations':
       case 'listModelDeployments':
         if (!config.model) {
-          message = 'No Model Specified for Model related Method'
+          message = 'No Model Specified for Model related Method';
         } else {
           params['model'] = config.model;
+        }
+        break;
+    }
+
+    if (message){
+      return Promise.reject(message);
+    }
+    return Promise.resolve();
+  }
+
+  function checkPayload(msg, m, params) {
+    var message = '';
+
+    switch (m) {
+      case 'runPrediction':
+        if (! (msg.payload && Array.isArray(msg.payload))) {
+          message = 'An array of values is required on msg.payload to run a prediction';
+        } else {
+          params.values = msg.payload;
         }
         break;
     }
@@ -133,17 +152,15 @@ module.exports = function(RED) {
     return p;
   }
 
-  function executePostRequest(uriAddress, t) {
+  function executePostRequest(uriAddress, t, p) {
     var p = new Promise(function resolver(resolve, reject){
-      console.log('**************');
-      console.log('Running Predictor on :', uriAddress);
       request({
         uri: uriAddress,
         method: 'POST',
         auth: {
           'bearer': t
         },
-        body: JSON.stringify({"values": [[16.4, 48.3, 30, 75.4, 28.9, 20]]})
+        body: JSON.stringify({"values": p.values})
       }, (error, response, body) => {
         if (!error && response.statusCode == 200) {
           data = JSON.parse(body);
@@ -208,7 +225,7 @@ module.exports = function(RED) {
                               + '/published_models/' + params.model
                               + '/deployments/' + params.deployment
                               + '/online';
-    return executePostRequest(uriAddress, t);
+    return executePostRequest(uriAddress, t, params);
   }
 
   function executeUnknownMethod(cn, t, params) {
@@ -355,6 +372,9 @@ module.exports = function(RED) {
       start(msg, config)
         .then( () => {
           return checkForParameters(msg, config, method, params);
+        })
+        .then( () => {
+          return checkPayload(msg, method, params);
         })
         .then( () => {
           return checkConnection(node.connectionNode);
