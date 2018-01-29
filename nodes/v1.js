@@ -29,6 +29,13 @@ module.exports = function(RED) {
     }
 
     switch (m) {
+      case 'getDeploymentDetails':
+        if (!config.deployment) {
+          message = 'No Deployment Specified for get Model Deployment Details Method'
+        } else {
+          params['deployment'] = config.deployment;
+        }
+         // deliberate no break
       case 'getModelDetails':
       case 'listModelMetrics':
       case 'listLearningIterations':
@@ -161,11 +168,13 @@ module.exports = function(RED) {
     var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
                               + '/published_models/' + params.model
                               + '/deployments';
+    return executeRequest(uriAddress, t);
+  }
 
-    console.log('****************');
-    console.log('Running against uri :', uriAddress);
-
-
+  function executeGetDeploymentDetails(cn, t, params) {
+    var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
+                              + '/published_models/' + params.model
+                              + '/deployments/' + params.deployment;
     return executeRequest(uriAddress, t);
   }
 
@@ -182,11 +191,9 @@ module.exports = function(RED) {
       'getModelDetails' : executeGetModelDetails,
       'listModelMetrics' : executeListModelMetrics,
       'listLearningIterations' : executeListLearningIterations,
-      'listModelDeployments' : executeListModelDeployments
+      'listModelDeployments' : executeListModelDeployments,
+      'getDeploymentDetails' :executeGetDeploymentDetails
     }
-
-    console.log('-----------------');
-    console.log('Method is : ', method);
 
     f = execute[method] || executeUnknownMethod
     p = f(cn, t, params);
@@ -198,7 +205,7 @@ module.exports = function(RED) {
     return Promise.resolve();
   }
 
-  function buildModelArray(data) {
+  function buildResponseArray(data) {
     models = [];
     resources = data.resources;
 
@@ -241,13 +248,12 @@ module.exports = function(RED) {
     node.error(messageTxt, msg);
   }
 
-
-
   // API used by widget to fetch available models
   RED.httpAdmin.get('/wml/models', function (req, res) {
     var connection = req.query.cn;
     var cn = RED.nodes.getNode(connection);
     var myToken = null;
+    var params = {};
 
     checkConnection(cn)
       .then( () => {
@@ -255,10 +261,10 @@ module.exports = function(RED) {
       })
       .then( (t) => {
         myToken = t;
-        return executeMethod('listModels', cn, myToken, {});
+        return executeMethod('listModels', cn, myToken, params);
       })
       .then( (data) => {
-        return buildModelArray(data);
+        return buildResponseArray(data);
       })
       .then( (models) => {
         res.json({models:models});
@@ -267,6 +273,36 @@ module.exports = function(RED) {
         res.json({error:'Not able to fetch models'});
       });
   });
+
+  // API used by widget to fetch available deployments for a model
+  RED.httpAdmin.get('/wml/deployments', function (req, res) {
+    var connection = req.query.cn;
+    var model = req.query.model;
+    var cn = RED.nodes.getNode(connection);
+    var myToken = null;
+    var params = {};
+
+    params.model = model;
+
+    checkConnection(cn)
+      .then( () => {
+        return getToken(cn);
+      })
+      .then( (t) => {
+        myToken = t;
+        return executeMethod('listModelDeployments', cn, myToken, params);
+      })
+      .then( (data) => {
+        return buildResponseArray(data);
+      })
+      .then( (deployments) => {
+        res.json({deployments:deployments});
+      })
+      .catch(function(err) {
+        res.json({error:'Not able to fetch deployments'});
+      });
+  });
+
 
   function Node(config) {
     var node = this;

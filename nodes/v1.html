@@ -37,6 +37,7 @@
           <option value="listLearningIterations">List Model Learning Iterations</option>
           <option disabled>______________</option>
           <option value="listModelDeployments">List Model Deployments</option>
+          <option value="getDeploymentDetails">Get Deployment Details</option>
           <option disabled>______________</option>
           <option value="runPrediction">Run Prediction</option>
       </select>
@@ -45,6 +46,12 @@
   <div class="form-row">
       <label for="node-input-model"><i class="fa fa-comments-o"></i> Model</label>
       <select type="text" id="node-input-model" style="display: inline-block; vertical-align:middle; width: 70%;">
+      </select>
+  </div>
+
+  <div class="form-row">
+      <label for="node-input-deployment"><i class="fa fa-comments-o"></i> Deployments</label>
+      <select type="text" id="node-input-deployment" style="display: inline-block; vertical-align:middle; width: 70%;">
       </select>
   </div>
 
@@ -97,9 +104,27 @@
     var fields = [];
 
     fields.push('#node-input-model'
+                    + ', #node-input-deployment'
                     + ', #node-input-flushcache');
 
     wml01.hideSelectedFields(fields);
+  }
+
+  wml01.processSelectedModel = function(model) {
+    var found = false;
+
+    if (wml01.models) {
+      wml01.models.forEach (function(m) {
+        if (m.guid === model && m.deployments) {
+          found = true;
+        }
+      });
+      if (!found) {
+        wml01.fetchDeployments(model);
+      } else {
+        wml01.populateDeploymentList(model);
+      }
+    }
   }
 
   wml01.processSelectedMethod = function(method) {
@@ -111,6 +136,10 @@
       case 'instanceDetails':
       case 'listModels':
         break;
+      case 'runPrediction':
+      case 'getDeploymentDetails':
+        fields.push('#node-input-deployment');
+        // deliberate no break
       case 'getModelDetails':
       case 'listModelMetrics':
       case 'listLearningIterations':
@@ -133,6 +162,10 @@
       wml01.processSelectedMethod($('#node-input-wml-mode').val());
     });
 
+    $('#node-input-model').change(function() {
+      wml01.processSelectedModel($('#node-input-model').val());
+    });
+
     $('#node-input-flushcache').click(function () {
       wml01.flushCache();
     });
@@ -152,21 +185,66 @@
     wml01.processSelectedMethod($('#node-input-wml-mode').val());
   }
 
-
   wml01.fetchModels = function () {
     var cn = $('#node-input-connection').val();
     var connection = {cn: cn};
 
     if (!wml01.models) {
       $.getJSON('wml/models/', connection)
+        .done(function (data) {
+          if (data.models) {
+            wml01.models = data.models;
+            wml01.rebuildModelList();
+          }
+        }).fail(function (err) {
+          console.log(err);
+        }).always(function () {});
+    }
+  }
+
+  wml01.modelIndex = function (model) {
+    var pos = -1;
+    if (wml01.models) {
+      wml01.models.forEach (function(m, i) {
+        if (m.guid === model) {
+          pos = i;
+        }
+      });
+    }
+    return pos;
+  }
+
+  wml01.fetchDeployments = function (model) {
+    var cn = $('#node-input-connection').val();
+    var connection = {cn: cn, model: model};
+
+    $.getJSON('wml/deployments/', connection)
       .done(function (data) {
-        if (data.models) {
-          wml01.models = data.models;
-          wml01.rebuildModelList();
+        if (data.deployments) {
+          var pos = wml01.modelIndex(model);
+          if (pos >= 0) {
+            wml01.models[pos]['deployments'] = data.deployments;
+          }
+          wml01.populateDeploymentList(model);
         }
       }).fail(function (err) {
         console.log(err);
       }).always(function () {});
+  }
+
+  wml01.populateDeploymentList = function (model) {
+    $('select#node-input-deployment').empty();
+    var pos = wml01.modelIndex(model);
+    if (pos >= 0) {
+      // Flush out the list first
+      wml01.models[pos]['deployments'].forEach( function (d) {
+        $('select#node-input-deployment')
+          .append('<option value='
+                        + '"' + d.guid + '"'
+                        + '>'
+                        + d.name
+                        + '</option>');
+      })
     }
   }
 
@@ -191,7 +269,8 @@
         name: { value: '' },
         connection: { value: '', type: 'wml-config' },
         'wml-mode': {value: 'runPrediction'},
-        model: {value: ''}
+        model: {value: ''},
+        deployment: {value: ''}
       },
       credentials: {
       },
