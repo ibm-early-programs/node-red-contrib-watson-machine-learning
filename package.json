@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-watson-machine-learning",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Interact with Watson Machine learning",
   "dependencies": {
     "request": "~2.83.0"
