@@ -1,13 +1,13 @@
 {
   "name": "node-red-contrib-watson-machine-learning",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Interact with Watson Machine learning",
   "dependencies": {
     "request": "~2.83.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.ibm.com/soheel-chughtai/node-red-contrib-zeddeebeetwo"
+    "url": "https://github.com/ibm-early-programs/node-red-contrib-watson-machine-learning"
   },
   "license": "Apache-2.0",
   "keywords": [
