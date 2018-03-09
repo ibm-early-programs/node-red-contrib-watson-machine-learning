@@ -44,7 +44,7 @@ module.exports = function(RED) {
         if (!config.model) {
           message = 'No Model Specified for Model related Method';
         } else {
-          params['model'] = config.model;
+          params['model'] = config.model; //'f0ffd221-1390-49a7-bdf2-3cc86ed79ba7';//config.model;
         }
         break;
     }
@@ -155,6 +155,7 @@ module.exports = function(RED) {
   function executePostRequest(uriAddress, t, p) {
     var p = new Promise(function resolver(resolve, reject){
       request({
+        headers: {'content-type' : 'application/json'},
         uri: uriAddress,
         method: 'POST',
         auth: {
@@ -225,6 +226,7 @@ module.exports = function(RED) {
                               + '/published_models/' + params.model
                               + '/deployments/' + params.deployment
                               + '/online';
+
     return executePostRequest(uriAddress, t, params);
   }
 
