@@ -39,6 +39,9 @@
           <option value="listModelDeployments">List Model Deployments</option>
           <option value="getDeploymentDetails">Get Deployment Details</option>
           <option disabled>______________</option>
+          <option value="deleteModel">Delete Model</option>
+          <option value="deleteDeployment">Delete Model Deployment</option>
+          <option disabled>______________</option>
           <option value="runPrediction">Run Prediction</option>
       </select>
   </div>
@@ -151,6 +154,16 @@
           are displayed in the node
           configuration dialog, for you to select which deployment to run
           this query against.
+        </p>
+      </li>
+
+      <li>Delete Model
+        <p>In this mode the selected model is deleted.
+        </p>
+      </li>
+
+      <li>Delete Model Deployment
+        <p>In this mode the selected model deployment is deleted.
         </p>
       </li>
 
@@ -272,11 +285,13 @@
         break;
       case 'runPrediction':
       case 'getDeploymentDetails':
+      case 'deleteDeployment':
         fields.push('#node-input-deployment');
         // deliberate no break
       case 'getModelDetails':
       case 'listModelMetrics':
       case 'listLearningIterations':
+      case 'deleteModel':
       case 'listModelDeployments':
         fields.push('#node-input-model'
                    + ', #node-input-flushcache');
