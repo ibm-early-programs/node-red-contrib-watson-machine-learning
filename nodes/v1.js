@@ -30,6 +30,7 @@ module.exports = function(RED) {
 
     switch (m) {
       case 'getDeploymentDetails':
+      case 'deleteDeployment':
       case 'runPrediction':
         if (!config.deployment) {
           message = 'No Deployment Specified for Deployment related Method';
@@ -40,11 +41,12 @@ module.exports = function(RED) {
       case 'getModelDetails':
       case 'listModelMetrics':
       case 'listLearningIterations':
+      case 'deleteModel':
       case 'listModelDeployments':
         if (!config.model) {
           message = 'No Model Specified for Model related Method';
         } else {
-          params['model'] = config.model;
+          params['model'] = config.model; //'f0ffd221-1390-49a7-bdf2-3cc86ed79ba7';//config.model;
         }
         break;
     }
@@ -152,9 +154,31 @@ module.exports = function(RED) {
     return p;
   }
 
+  function executeDeleteRequest(uriAddress, t) {
+    var p = new Promise(function resolver(resolve, reject){
+      request({
+        uri: uriAddress,
+        method: 'DELETE',
+        auth: {
+          'bearer': t
+        }
+      }, (error, response, body) => {
+        if (!error && (response.statusCode == 200 || response.statusCode == 204)) {
+          resolve({'status':'ok'});
+        } else if (error) {
+          reject(error);
+        } else {
+          reject('Error performing request ' + response.statusCode);
+        }
+      });
+    });
+    return p;
+  }
+
   function executePostRequest(uriAddress, t, p) {
     var p = new Promise(function resolver(resolve, reject){
       request({
+        headers: {'content-type' : 'application/json'},
         uri: uriAddress,
         method: 'POST',
         auth: {
@@ -220,11 +244,25 @@ module.exports = function(RED) {
     return executeRequest(uriAddress, t);
   }
 
+  function executeDeleteDeployment(cn, t, params) {
+    var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
+                              + '/published_models/' + params.model
+                              + '/deployments/' + params.deployment;
+    return executeDeleteRequest(uriAddress, t);
+  }
+
+  function executeDeleteModel(cn, t, params) {
+    var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
+                              + '/published_models/' + params.model;
+    return executeDeleteRequest(uriAddress, t);
+  }
+
   function executeRunPrediction(cn, t, params) {
     var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
                               + '/published_models/' + params.model
                               + '/deployments/' + params.deployment
                               + '/online';
+
     return executePostRequest(uriAddress, t, params);
   }
 
@@ -239,10 +277,12 @@ module.exports = function(RED) {
       'instanceDetails' : executeInstanceDetails,
       'listModels': executeListModels,
       'getModelDetails' : executeGetModelDetails,
+      'deleteModel' : executeDeleteModel,
       'listModelMetrics' : executeListModelMetrics,
       'listLearningIterations' : executeListLearningIterations,
       'listModelDeployments' : executeListModelDeployments,
       'getDeploymentDetails' : executeGetDeploymentDetails,
+      'deleteDeployment' : executeDeleteDeployment,
       'runPrediction' : executeRunPrediction
     }
 

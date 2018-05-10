@@ -39,6 +39,9 @@
           <option value="listModelDeployments">List Model Deployments</option>
           <option value="getDeploymentDetails">Get Deployment Details</option>
           <option disabled>______________</option>
+          <option value="deleteModel">Delete Model</option>
+          <option value="deleteDeployment">Delete Model Deployment</option>
+          <option disabled>______________</option>
           <option value="runPrediction">Run Prediction</option>
       </select>
   </div>
@@ -48,11 +51,17 @@
       <select type="text" id="node-input-model" style="display: inline-block; vertical-align:middle; width: 70%;">
       </select>
   </div>
+  <div>
+      <input type="hidden" id="node-input-modelhidden"/>
+  </div>
 
   <div class="form-row">
       <label for="node-input-deployment"><i class="fa fa-comments-o"></i> Deployments</label>
       <select type="text" id="node-input-deployment" style="display: inline-block; vertical-align:middle; width: 70%;">
       </select>
+  </div>
+  <div>
+      <input type="hidden" id="node-input-deploymenthidden"/>
   </div>
 
   <div class="form-row">
@@ -148,6 +157,16 @@
         </p>
       </li>
 
+      <li>Delete Model
+        <p>In this mode the selected model is deleted.
+        </p>
+      </li>
+
+      <li>Delete Model Deployment
+        <p>In this mode the selected model deployment is deleted.
+        </p>
+      </li>
+
       <li>Run Prediction
         <p>In this mode a prediction is run against the selected deployment.
           The prediction is returned on
@@ -166,7 +185,7 @@
             <code>msg.payload = [[16.4, 48.3, 30, 75.4, 28.9, 20], [13.4, 38.3, 30, 75.4, 18.9, 25]];</code>
           </p>
           The number of values in the array, must match the expected inputs for your
-          machine learning model.         
+          machine learning model.
         </p>
         <p>Lists of available published models and Deployments
           are displayed in the node
@@ -199,6 +218,9 @@
   var wml01 = new WML01();
   wml01.models = null;
 
+  wml01.model_selected = $('#node-input-modelhidden').val();
+  wml01.deployment_selected = $('#node-input-deploymenthidden').val();
+
   wml01.showSelectedFields = function(fields) {
     for (i = 0; i < fields.length; i++) {
       $(fields[i]).parent().show();
@@ -220,6 +242,20 @@
 
     wml01.hideSelectedFields(fields);
   }
+
+  // The dynamic nature of the selection fields in this node has caused problems.
+  // Whenever there is a fetch for the models, on a page refresh or applicaiton
+  // restart, the settings for the dynamic fields are lost.
+  // So hidden (text) fields are being used to squirrel away the values, so that
+  // they can be restored.
+  wml01.restoreHidden = function () {
+    wml01.model_selected = $('#node-input-modelhidden').val();
+    $('#node-input-model').val(wml01.model_selected);
+
+    wml01.deployment_selected = $('#node-input-deploymenthidden').val();
+    $('#node-input-deployment').val(wml01.deployment_selected);
+  }
+
 
   wml01.processSelectedModel = function(model) {
     var found = false;
@@ -249,11 +285,13 @@
         break;
       case 'runPrediction':
       case 'getDeploymentDetails':
+      case 'deleteDeployment':
         fields.push('#node-input-deployment');
         // deliberate no break
       case 'getModelDetails':
       case 'listModelMetrics':
       case 'listLearningIterations':
+      case 'deleteModel':
       case 'listModelDeployments':
         fields.push('#node-input-model'
                    + ', #node-input-flushcache');
@@ -286,9 +324,14 @@
     // Flush out the list first
     $('select#node-input-model').empty()
     wml01.models.forEach( function (m) {
+      var selectedText = '';
+      if (wml01.model_selected === m.guid) {
+        selectedText = 'selected="selected"';
+      }
       $('select#node-input-model')
         .append('<option value='
                       + '"' + m.guid + '"'
+                      + selectedText
                       + '>'
                       + m.name
                       + '</option>');
@@ -349,9 +392,14 @@
     if (pos >= 0) {
       // Flush out the list first
       wml01.models[pos]['deployments'].forEach( function (d) {
+        var selectedText = '';
+        if (wml01.deployment_selected === d.guid) {
+          selectedText = 'selected="selected"';
+        }
         $('select#node-input-deployment')
           .append('<option value='
                         + '"' + d.guid + '"'
+                        + selectedText
                         + '>'
                         + d.name
                         + '</option>');
@@ -361,6 +409,7 @@
 
   function wml01oneditprepare() {
     wml01.hideEverything();
+    wml01.restoreHidden();
     wml01.handlersUI();
     if (wml01.models) {
       wml01.rebuildModelList();
@@ -370,6 +419,11 @@
   }
 
   function wml01oneditsave(){
+    wml01.model_selected = $('#node-input-model').val();
+    $('#node-input-modelhidden').val(wml01.model_selected);
+
+    wml01.deployment_selected = $('#node-input-deploymen').val();
+    $('#node-input-deploymenthidden').val(wml01.deployment_selected);
   }
 
 
@@ -381,7 +435,9 @@
         connection: { value: '', type: 'wml-config' },
         'wml-mode': {value: 'runPrediction'},
         model: {value: ''},
-        deployment: {value: ''}
+        deployment: {value: ''},
+        modelhidden: {value: ''},
+        deploymenthidden: {value: ''}
       },
       credentials: {
       },
