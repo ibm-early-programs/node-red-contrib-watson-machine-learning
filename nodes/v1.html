@@ -173,7 +173,7 @@
           <code>msg.payload</code>
         </p>
 
-        <p>The data values to run the prediction against should be passed as
+        <p>The data values to run the prediction against can be passed either
           an array in
           <code>msg.payload</code>.
           <p>
@@ -184,6 +184,11 @@
             EG. Run prediction against two set of values
             <code>msg.payload = [[16.4, 48.3, 30, 75.4, 28.9, 20], [13.4, 38.3, 30, 75.4, 18.9, 25]];</code>
           </p>
+          or as an object
+          <p>
+            EG. <code>msg.payload = {values:[[16.4, 48.3, 30, 75.4, 28.9, 20]]};</code>
+          </p>
+          Using an object allows you to provide fields also. 
           The number of values in the array, must match the expected inputs for your
           machine learning model.
         </p>
