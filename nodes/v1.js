@@ -59,13 +59,24 @@ module.exports = function(RED) {
 
   function checkPayload(msg, m, params) {
     var message = '';
-
     switch (m) {
       case 'runPrediction':
-        if (! (msg.payload && Array.isArray(msg.payload))) {
-          message = 'An array of values is required on msg.payload to run a prediction';
-        } else {
+        if (! msg.payload) {
+          message = 'Values and Optional fields are required to run a prediction';
+        } else if (Array.isArray(msg.payload)) {
+          // allow values to be provided as a straight array.
           params.values = msg.payload;
+        } else if ('object' !== typeof msg.payload) {
+          message = 'Values need to be provided either as an array or as an object'
+        } else {
+          if (msg.payload.values) {
+            params.values = msg.payload.values;
+          } else {
+            message = 'Can not run a prediction without values.'
+          }
+          if (msg.payload.fields) {
+            params.fields = msg.payload.fields;
+          }
         }
         break;
     }
@@ -177,6 +188,12 @@ module.exports = function(RED) {
 
   function executePostRequest(uriAddress, t, p) {
     var p = new Promise(function resolver(resolve, reject){
+
+      let dParams = {values : p.values};
+      if (p.fields) {
+        dParams.fields = p.fields;
+      }
+
       request({
         headers: {'content-type' : 'application/json'},
         uri: uriAddress,
@@ -184,7 +201,7 @@ module.exports = function(RED) {
         auth: {
           'bearer': t
         },
-        body: JSON.stringify({"values": p.values})
+        body: JSON.stringify(dParams)
       }, (error, response, body) => {
         if (!error && response.statusCode == 200) {
           data = JSON.parse(body);
@@ -192,7 +209,16 @@ module.exports = function(RED) {
         } else if (error) {
           reject(error);
         } else {
-          reject('Error performing request ' + response.statusCode);
+          let errordata = JSON.parse(body);
+          //console.log(errordata);
+          if (errordata.errors &&
+                 Array.isArray(errordata.errors) &&
+                 errordata.errors.length &&
+                 errordata.errors[0].message) {
+            reject('Error ' + response.statusCode + ' ' + errordata.errors[0].message);
+          } else {
+            reject('Error performing request ' + response.statusCode);
+          }
         }
       });
     });

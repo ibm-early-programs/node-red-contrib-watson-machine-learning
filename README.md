@@ -17,8 +17,9 @@ For most modes the node `msg.payload` is not required. The node needs to be conf
 to select model and deployment. A list of published models and deployments is
 automatically retrieved by the node, making use of the API.
 
-When running a prediction `msg.filename` needs to be select to an arrays of
-an array of values, against which to run predictions against.
+When running a prediction `msg.payload` needs to be select either to an arrays of
+an array of values, or an object containing and array of array of values,
+against which to run predictions against.
 eg. To run a prediction against a model expecting 6 decimal numbers.
 ````
 msg.payload = [[16.4, 48.3, 30, 75.4, 28.9, 20]];
@@ -27,6 +28,11 @@ To run a prediction for multiple set of values/
 ````
 msg.payload = [[16.4, 48.3, 30, 75.4, 28.9, 20], [13.4, 38.3, 30, 75.4, 18.9, 25]];
 ````
+or
+````
+msg.payload = {values : [[16.4, 48.3, 30, 75.4, 28.9, 20], [13.4, 38.3, 30, 75.4, 18.9, 25]] };
+````
+in this way the fields parameter can also be provided.
 
 ### Output
 For all modes
