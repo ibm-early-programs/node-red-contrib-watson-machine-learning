@@ -24,7 +24,7 @@ eg. To run a prediction against a model expecting 6 decimal numbers.
 ````
 msg.payload = [[16.4, 48.3, 30, 75.4, 28.9, 20]];
 ````
-To run a prediction for multiple set of values/
+To run a prediction for multiple set of values
 ````
 msg.payload = [[16.4, 48.3, 30, 75.4, 28.9, 20], [13.4, 38.3, 30, 75.4, 18.9, 25]];
 ````
