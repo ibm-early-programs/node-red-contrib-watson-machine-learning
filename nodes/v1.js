@@ -195,7 +195,10 @@ module.exports = function(RED) {
       }
 
       request({
-        headers: {'content-type' : 'application/json'},
+        headers: {
+          'content-type' : 'application/json',
+          'Accept': 'application/json'
+        },
         uri: uriAddress,
         method: 'POST',
         auth: {
