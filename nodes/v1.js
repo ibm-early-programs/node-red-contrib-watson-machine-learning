@@ -15,6 +15,7 @@
  **/
 
 module.exports = function(RED) {
+  const debug = require('debug')('node-red-contrib-watson-machine-learning');
   const request = require('request');
 
   function start(msg, config) {
@@ -136,6 +137,7 @@ module.exports = function(RED) {
         } else if (error) {
           reject(error);
         } else {
+          debug('Access Token Error:', error);
           reject('Access Token Error ' + response.statusCode);
         }
       });
@@ -195,7 +197,10 @@ module.exports = function(RED) {
       }
 
       request({
-        headers: {'content-type' : 'application/json'},
+        headers: {
+          'content-type' : 'application/json',
+          'Accept': 'application/json'
+        },
         uri: uriAddress,
         method: 'POST',
         auth: {
@@ -387,6 +392,7 @@ module.exports = function(RED) {
         res.json({models:models});
       })
       .catch(function(err) {
+        debug('/wml/models Error:', err);
         res.json({error:'Not able to fetch models'});
       });
   });
@@ -416,6 +422,7 @@ module.exports = function(RED) {
         res.json({deployments:deployments});
       })
       .catch(function(err) {
+        debug('/wml/deployments Error:', err);
         res.json({error:'Not able to fetch deployments'});
       });
   });
