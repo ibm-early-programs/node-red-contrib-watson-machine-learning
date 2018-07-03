@@ -3,6 +3,7 @@
   "version": "0.0.6",
   "description": "Interact with Watson Machine learning",
   "dependencies": {
+    "debug": "^3.1.0",
     "request": "~2.86.0"
   },
   "repository": {
