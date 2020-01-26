@@ -243,9 +243,36 @@ module.exports = function(RED) {
     var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid;
     return executeRequest(uriAddress, t);
   }
-/*
-https://us-south.ml.cloud.ibm.com/v3/wml_instances/bdf98a73-2b13-44d8-a6fe-9b85628b9a36/published_models
-*/
+
+  function checkForModels(data) {
+    if (data && data.resources &&
+          Array.isArray(data.resources) &&
+          (0 < data.resources.length)) {
+      return true;
+    }
+    return false;
+  }
+
+  function fetchModels(cn, myToken) {
+    return new Promise(function resolver(resolve, reject) {
+      // Try V3 first
+      executeMethod('listModels', cn, myToken, {})
+      .then((data) => {
+        if (checkForModels(data)) {
+          resolve(data);
+        } else {
+          // If no models are found then try V4
+          return executeMethod('listModelsV4', cn, myToken, {})
+        }
+      })
+      .then((data) => {
+        resolve(data);
+      })
+      .catch((err) => {
+        reject(err);
+      })
+    });
+  }
 
   function executeListModels(cn, t, params) {
     var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
@@ -404,10 +431,9 @@ https://us-south.ml.cloud.ibm.com/v3/wml_instances/bdf98a73-2b13-44d8-a6fe-9b856
 
   // API used by widget to fetch available models
   RED.httpAdmin.get('/wml/models', function (req, res) {
-    var connection = req.query.cn;
-    var cn = RED.nodes.getNode(connection);
-    var myToken = null;
-    var params = {};
+    let connection = req.query.cn;
+    let cn = RED.nodes.getNode(connection);
+    let myToken = null;
 
     debug('Fetching Models');
 
@@ -417,7 +443,7 @@ https://us-south.ml.cloud.ibm.com/v3/wml_instances/bdf98a73-2b13-44d8-a6fe-9b856
       })
       .then( (t) => {
         myToken = t;
-        return executeMethod('listModels', cn, myToken, params);
+        return fetchModels(cn, myToken)
       })
       .then( (data) => {
         return buildResponseArray(data);
