@@ -20,23 +20,18 @@
      RED.nodes.createNode(this, config);
 
      this.host = config.host;
-     this.accesskey = config.accesskey;     
      this.instanceid = config.instanceid;
 
      var credentials = this.credentials;
 
-     if ((credentials) && (credentials.hasOwnProperty("username"))) {
-       this.username = credentials.username;
-     }
-     if ((credentials) && (credentials.hasOwnProperty("password"))) {
-       this.password = credentials.password;
+     if ((credentials) && (credentials.hasOwnProperty("apikey"))) {
+       this.apikey = credentials.apikey;
      }
    }
 
    RED.nodes.registerType('wml-config', Node, {
      credentials: {
-       password: {type:"password"},
-       username: {type:"text"}
+       apikey: {type:"apikey"}
      }
    });
  };

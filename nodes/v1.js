@@ -89,49 +89,50 @@ module.exports = function(RED) {
   }
 
   function checkConnection(connectionNode) {
-    var errorMsg = '';
-    //var connString = settings.dbConnectionString();
+    return p = new Promise(function resolver(resolve, reject) {
+      var errorMsg = '';
+      //var connString = settings.dbConnectionString();
 
-    if (!connectionNode) {
-      errorMsg = 'No Configuration Found';
-    } else if (!connectionNode.host) {
-      errorMsg = 'No Host set in configuration';
-    } else if (!connectionNode.accesskey) {
-      errorMsg = 'No Access Key set in configuration';
-    } else if (!connectionNode.instanceid) {
-      errorMsg = 'No Access Key set in configuration';
-    } else if (!connectionNode.username) {
-      errorMsg = 'No Username set in configuration';
-    } else if (!connectionNode.password) {
-      errorMsg = 'No Password set in configuration';
-    }
+      if (!connectionNode) {
+        errorMsg = 'No Configuration Found';
+      } else if (!connectionNode.host) {
+        errorMsg = 'No Host set in configuration';
+      } else if (!connectionNode.apikey) {
+        errorMsg = 'No API Key set in configuration';
+      } else if (!connectionNode.instanceid) {
+        errorMsg = 'No Access Key set in configuration';
+      }
 
-    if (errorMsg) {
-      return Promise.reject(errorMsg);
-    }
-    return Promise.resolve();
+      if (errorMsg) {
+        return reject(errorMsg);
+      }
+      return resolve();
+    });
   }
 
-
   function getToken(connectionNode, token) {
-
-    var p = new Promise(function resolver(resolve, reject){
+    return new Promise(function resolver(resolve, reject) {
       var token = null;
-      var uriAddress = connectionNode.host + '/v3/identity/token';
+      //let uriAddress = connectionNode.host + '/v3/identity/token';
+      let uriAddress = "https://iam.bluemix.net/oidc/token";
+      let IBM_Cloud_IAM_uid = "bx";
+      let IBM_Cloud_IAM_pwd = "bx";
 
       request({
         uri: uriAddress,
-        method: 'GET',
+        method: 'POST',
         auth: {
-          user: connectionNode.username,
-          pass: connectionNode.password
-        }
+          user: IBM_Cloud_IAM_uid,
+          pass: IBM_Cloud_IAM_pwd
+        },
+        headers : { "Content-Type"  : "application/x-www-form-urlencoded" },
+        body    : "apikey=" + connectionNode.apikey + "&grant_type=urn:ibm:params:oauth:grant-type:apikey"
       }, (error, response, body) => {
         if (!error && response.statusCode == 200) {
           var b = JSON.parse(body);
-          if (b.token) {
+          if (b.access_token) {
             //token = 'Bearer ' + b.token;
-            token = b.token;
+            token = b.access_token;
           }
           resolve(token);
         } else if (error) {
@@ -142,18 +143,27 @@ module.exports = function(RED) {
         }
       });
     });
-    return p;
   }
 
   function executeRequest(uriAddress, t) {
-    var p = new Promise(function resolver(resolve, reject){
-      request({
+    return executeRequestV4Style(uriAddress, t, null);
+  }
+
+  function executeRequestV4Style(uriAddress, t, instanceid) {
+    return new Promise(function resolver(resolve, reject) {
+      let reqObject = {
         uri: uriAddress,
         method: 'GET',
         auth: {
           'bearer': t
         }
-      }, (error, response, body) => {
+      };
+
+      if (instanceid) {
+        reqObject.headers = {'ML-Instance-ID' : instanceid};
+      }
+
+      request(reqObject, (error, response, body) => {
         if (!error && response.statusCode == 200) {
           data = JSON.parse(body);
           resolve(data);
@@ -164,7 +174,6 @@ module.exports = function(RED) {
         }
       });
     });
-    return p;
   }
 
   function executeDeleteRequest(uriAddress, t) {
@@ -234,11 +243,19 @@ module.exports = function(RED) {
     var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid;
     return executeRequest(uriAddress, t);
   }
+/*
+https://us-south.ml.cloud.ibm.com/v3/wml_instances/bdf98a73-2b13-44d8-a6fe-9b85628b9a36/published_models
+*/
 
   function executeListModels(cn, t, params) {
     var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
                               + '/published_models';
     return executeRequest(uriAddress, t);
+  }
+
+  function executeListModelsV4(cn, t, params) {
+    var uriAddress = cn.host + '/v4/models';
+    return executeRequestV4Style(uriAddress, t, cn.instanceid);
   }
 
   function executeGetModelDetails(cn, t, params) {
@@ -260,6 +277,18 @@ module.exports = function(RED) {
                               + '/learning_iterations';
     return executeRequest(uriAddress, t);
   }
+
+  function executeListAllDeployments(cn, t, params) {
+    var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
+                              + '/deployments';
+    return executeRequest(uriAddress, t);
+  }
+
+  function executeListAllDeploymentsV4(cn, t, params) {
+    var uriAddress = cn.host + '/v4/deployments';
+    return executeRequestV4Style(uriAddress, t, cn.instanceid);
+  }
+
 
   function executeListModelDeployments(cn, t, params) {
     var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
@@ -307,10 +336,13 @@ module.exports = function(RED) {
     const execute = {
       'instanceDetails' : executeInstanceDetails,
       'listModels': executeListModels,
+      'listModelsV4': executeListModelsV4,
       'getModelDetails' : executeGetModelDetails,
       'deleteModel' : executeDeleteModel,
       'listModelMetrics' : executeListModelMetrics,
       'listLearningIterations' : executeListLearningIterations,
+      'listAllDeployments': executeListAllDeployments,
+      'listAllDeploymentsV4': executeListAllDeploymentsV4,
       'listModelDeployments' : executeListModelDeployments,
       'getDeploymentDetails' : executeGetDeploymentDetails,
       'deleteDeployment' : executeDeleteDeployment,
@@ -328,8 +360,8 @@ module.exports = function(RED) {
   }
 
   function buildResponseArray(data) {
-    models = [];
-    resources = data.resources;
+    let models = [];
+    let resources = data.resources;
 
     if (resources) {
       resources.forEach((e) => {
@@ -376,6 +408,8 @@ module.exports = function(RED) {
     var cn = RED.nodes.getNode(connection);
     var myToken = null;
     var params = {};
+
+    debug('Fetching Models');
 
     checkConnection(cn)
       .then( () => {
