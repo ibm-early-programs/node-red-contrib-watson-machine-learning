@@ -30,6 +30,13 @@ module.exports = function(RED) {
     }
 
     switch (m) {
+      case 'getDeploymentDetailsV4':
+        if (!config.deployment) {
+          message = 'No Deployment Specified for Deployment related Method';
+        } else {
+          params['deployment'] = config.deployment;
+        }
+        break;
       case 'getDeploymentDetails':
       case 'deleteDeployment':
       case 'runPrediction':
@@ -40,6 +47,7 @@ module.exports = function(RED) {
         }
          // deliberate no break
       case 'getModelDetails':
+      case 'getModelDetailsV4':
       case 'listModelMetrics':
       case 'listLearningIterations':
       case 'deleteModel':
@@ -274,6 +282,37 @@ module.exports = function(RED) {
     });
   }
 
+  function checkForDeployments(data) {
+    if (data && data.resources &&
+          Array.isArray(data.resources) &&
+          (0 < data.resources.length)) {
+      return true;
+    }
+    return false;
+  }
+
+
+  function fetchDeployments(cn, myToken) {
+    return new Promise(function resolver(resolve, reject) {
+      // Try V3 first
+      executeMethod('listAllDeployments', cn, myToken, {})
+      .then((data) => {
+        if (checkForDeployments(data)) {
+          resolve(data);
+        } else {
+          // If no deployments are found then try V4
+          return executeMethod('listAllDeploymentsV4', cn, myToken, {});
+        }
+      })
+      .then((data) => {
+        resolve(data);
+      })
+      .catch((err) => {
+        reject(err);
+      })
+    });
+  }
+
   function executeListModels(cn, t, params) {
     var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
                               + '/published_models';
@@ -289,6 +328,11 @@ module.exports = function(RED) {
     var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
                               + '/published_models/' + params.model;
     return executeRequest(uriAddress, t);
+  }
+
+  function executeGetModelDetailsV4(cn, t, params) {
+    var uriAddress = cn.host + '/v4/models/' + params.model;
+    return executeRequestV4Style(uriAddress, t, cn.instanceid);
   }
 
   function executeListModelMetrics(cn, t, params) {
@@ -316,7 +360,6 @@ module.exports = function(RED) {
     return executeRequestV4Style(uriAddress, t, cn.instanceid);
   }
 
-
   function executeListModelDeployments(cn, t, params) {
     var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
                               + '/published_models/' + params.model
@@ -329,6 +372,11 @@ module.exports = function(RED) {
                               + '/published_models/' + params.model
                               + '/deployments/' + params.deployment;
     return executeRequest(uriAddress, t);
+  }
+
+  function executeGetDeploymentDetailsV4(cn, t, params) {
+    var uriAddress = cn.host + '/v4/deployments/' + params.deployment;
+    return executeRequestV4Style(uriAddress, t, cn.instanceid);
   }
 
   function executeDeleteDeployment(cn, t, params) {
@@ -365,6 +413,7 @@ module.exports = function(RED) {
       'listModels': executeListModels,
       'listModelsV4': executeListModelsV4,
       'getModelDetails' : executeGetModelDetails,
+      'getModelDetailsV4' : executeGetModelDetailsV4,
       'deleteModel' : executeDeleteModel,
       'listModelMetrics' : executeListModelMetrics,
       'listLearningIterations' : executeListLearningIterations,
@@ -372,6 +421,7 @@ module.exports = function(RED) {
       'listAllDeploymentsV4': executeListAllDeploymentsV4,
       'listModelDeployments' : executeListModelDeployments,
       'getDeploymentDetails' : executeGetDeploymentDetails,
+      'getDeploymentDetailsV4' : executeGetDeploymentDetailsV4,
       'deleteDeployment' : executeDeleteDeployment,
       'runPrediction' : executeRunPrediction
     }
@@ -397,6 +447,10 @@ module.exports = function(RED) {
           m['guid'] = e.metadata.guid;
           if (e.entity && e.entity.name) {
             m['name'] = e.entity.name;
+            if (e.entity.published_model && e.entity.published_model.guid) {
+              m['model'] = e.entity.published_model.guid;
+            }
+
             models.push(m);
           }
         }
@@ -460,12 +514,12 @@ module.exports = function(RED) {
   // API used by widget to fetch available deployments for a model
   RED.httpAdmin.get('/wml/deployments', function (req, res) {
     var connection = req.query.cn;
-    var model = req.query.model;
+    //var model = req.query.model;
     var cn = RED.nodes.getNode(connection);
     var myToken = null;
-    var params = {};
+    //var params = {};
 
-    params.model = model;
+    //params.model = model;
 
     checkConnection(cn)
       .then( () => {
@@ -473,7 +527,8 @@ module.exports = function(RED) {
       })
       .then( (t) => {
         myToken = t;
-        return executeMethod('listModelDeployments', cn, myToken, params);
+        return fetchDeployments(cn, myToken);
+        // return executeMethod('listModelDeployments', cn, myToken, params);
       })
       .then( (data) => {
         return buildResponseArray(data);
