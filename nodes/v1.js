@@ -32,6 +32,7 @@ module.exports = function(RED) {
     switch (m) {
       case 'getDeploymentDetailsV4':
       case 'deleteDeploymentV4':
+      case 'runPrediction':
         if (!config.deployment) {
           message = 'No Deployment Specified for Deployment related Method';
         } else {
@@ -40,7 +41,6 @@ module.exports = function(RED) {
         break;
       case 'getDeploymentDetails':
       case 'deleteDeployment':
-      case 'runPrediction':
         if (!config.deployment) {
           message = 'No Deployment Specified for Deployment related Method';
         } else {
@@ -57,7 +57,7 @@ module.exports = function(RED) {
         if (!config.model) {
           message = 'No Model Specified for Model related Method';
         } else {
-          params['model'] = config.model; //'f0ffd221-1390-49a7-bdf2-3cc86ed79ba7';//config.model;
+          params['model'] = config.model;
         }
         break;
     }
@@ -217,14 +217,14 @@ module.exports = function(RED) {
   }
 
   function executePostRequest(uriAddress, t, p) {
-    var p = new Promise(function resolver(resolve, reject){
+    return executePostRequestV4Style(uriAddress, t, p, null);
+  }
 
-      let dParams = {values : p.values};
-      if (p.fields) {
-        dParams.fields = p.fields;
-      }
 
-      request({
+  function executePostRequestV4Style(uriAddress, t, p, instanceid) {
+    return new Promise(function resolver(resolve, reject) {
+
+      let reqObject = {
         headers: {
           'content-type' : 'application/json',
           'Accept': 'application/json'
@@ -234,8 +234,14 @@ module.exports = function(RED) {
         auth: {
           'bearer': t
         },
-        body: JSON.stringify(dParams)
-      }, (error, response, body) => {
+        body: JSON.stringify(p)
+      };
+
+      if (instanceid) {
+        reqObject.headers = {'ML-Instance-ID' : instanceid};
+      }
+
+      request(reqObject, (error, response, body) => {
         if (!error && response.statusCode == 200) {
           data = JSON.parse(body);
           resolve(data);
@@ -255,7 +261,6 @@ module.exports = function(RED) {
         }
       });
     });
-    return p;
   }
 
   function executeInstanceDetails(cn, t, params) {
@@ -414,12 +419,18 @@ module.exports = function(RED) {
   }
 
   function executeRunPrediction(cn, t, params) {
-    var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
-                              + '/published_models/' + params.model
-                              + '/deployments/' + params.deployment
-                              + '/online';
+    // A V4 Type Prediction will work for both V3 and V4 deployments
+    let uriAddress = cn.host + '/v4/deployments/'
+                        + params.deployment + '/predictions';
 
-    return executePostRequest(uriAddress, t, params);
+    let dParams = {values : params.values};
+    if (params.fields) {
+      dParams.fields = params.fields;
+    }
+
+    let v4Params = {'input_data' : [dParams]};
+
+    return executePostRequestV4Style(uriAddress, t, v4Params, cn.instanceid);
   }
 
   function executeUnknownMethod(cn, t, params) {
