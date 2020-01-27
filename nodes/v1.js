@@ -31,6 +31,7 @@ module.exports = function(RED) {
 
     switch (m) {
       case 'getDeploymentDetailsV4':
+      case 'deleteDeploymentV4':
         if (!config.deployment) {
           message = 'No Deployment Specified for Deployment related Method';
         } else {
@@ -51,6 +52,7 @@ module.exports = function(RED) {
       case 'listModelMetrics':
       case 'listLearningIterations':
       case 'deleteModel':
+      case 'deleteModelV4':
       case 'listModelDeployments':
         if (!config.model) {
           message = 'No Model Specified for Model related Method';
@@ -185,14 +187,24 @@ module.exports = function(RED) {
   }
 
   function executeDeleteRequest(uriAddress, t) {
-    var p = new Promise(function resolver(resolve, reject){
-      request({
+    return executeDeleteRequestV4Style(uriAddress, t, null);
+  }
+
+  function executeDeleteRequestV4Style(uriAddress, t, instanceid) {
+    return new Promise(function resolver(resolve, reject){
+      let reqObject = {
         uri: uriAddress,
         method: 'DELETE',
         auth: {
           'bearer': t
         }
-      }, (error, response, body) => {
+      };
+
+      if (instanceid) {
+        reqObject.headers = {'ML-Instance-ID' : instanceid};
+      }
+
+      request(reqObject, (error, response, body) => {
         if (!error && (response.statusCode == 200 || response.statusCode == 204)) {
           resolve({'status':'ok'});
         } else if (error) {
@@ -202,7 +214,6 @@ module.exports = function(RED) {
         }
       });
     });
-    return p;
   }
 
   function executePostRequest(uriAddress, t, p) {
@@ -386,10 +397,20 @@ module.exports = function(RED) {
     return executeDeleteRequest(uriAddress, t);
   }
 
+  function executeDeleteDeploymentV4(cn, t, params) {
+    var uriAddress = cn.host + '/v4/deployments/' + params.deployment;
+    return executeDeleteRequestV4Style(uriAddress, t, cn.instanceid);
+  }
+
   function executeDeleteModel(cn, t, params) {
     var uriAddress = cn.host + '/v3/wml_instances/' + cn.instanceid
                               + '/published_models/' + params.model;
     return executeDeleteRequest(uriAddress, t);
+  }
+
+  function executeDeleteModelV4(cn, t, params) {
+    var uriAddress = cn.host + '/v4/models/' + params.model;
+    return executeDeleteRequestV4Style(uriAddress, t, cn.instanceid);
   }
 
   function executeRunPrediction(cn, t, params) {
@@ -415,6 +436,7 @@ module.exports = function(RED) {
       'getModelDetails' : executeGetModelDetails,
       'getModelDetailsV4' : executeGetModelDetailsV4,
       'deleteModel' : executeDeleteModel,
+      'deleteModelV4' : executeDeleteModelV4,
       'listModelMetrics' : executeListModelMetrics,
       'listLearningIterations' : executeListLearningIterations,
       'listAllDeployments': executeListAllDeployments,
@@ -423,6 +445,7 @@ module.exports = function(RED) {
       'getDeploymentDetails' : executeGetDeploymentDetails,
       'getDeploymentDetailsV4' : executeGetDeploymentDetailsV4,
       'deleteDeployment' : executeDeleteDeployment,
+      'deleteDeploymentV4' : executeDeleteDeploymentV4,
       'runPrediction' : executeRunPrediction
     }
 

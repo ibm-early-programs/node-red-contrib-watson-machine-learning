@@ -32,22 +32,24 @@
           <option value="instanceDetails">Service Instance Details</option>
           <option disabled>______________</option>
           <option value="listModels">V3 List Published Models</option>
-          <option value="listModelsV4">V4 List Published Models</option>
           <option value="getModelDetails">V3 Get Model Details</option>
+          <option value="listModelsV4">V4 List Published Models</option>
           <option value="getModelDetailsV4">V4 Get Model Details</option>
           <option value="listModelMetrics">List Model Metrics</option>
           <option value="listLearningIterations">List Model Learning Iterations</option>
           <option disabled>______________</option>
           <option value="listAllDeployments">V3 List All Deployments</option>
-          <option value="listAllDeploymentsV4">V4 List All Deployments</option>
           <option value="listModelDeployments">V3 List Model Deployments</option>
           <option value="getDeploymentDetails">V3 Get Deployment Details</option>
+          <option value="listAllDeploymentsV4">V4 List All Deployments</option>
           <option value="getDeploymentDetailsV4">V4 Get Deployment Details</option>
           <option disabled>______________</option>
           <option value="deleteModel">V3 Delete Model</option>
           <option value="deleteDeployment">V3 Delete Model Deployment</option>
+          <option value="deleteModelV4">V4 Delete Model</option>
+          <option value="deleteDeploymentV4">V4 Delete Deployment</option>
           <option disabled>______________</option>
-          <option value="runPrediction">V3 Run Prediction</option>
+          <option value="runPrediction">Run Prediction</option>
       </select>
   </div>
 
@@ -297,6 +299,7 @@
       case 'listAllDeploymentsV4':
         break;
       case 'getDeploymentDetailsV4':
+      case 'deleteDeploymentV4':
         fields.push('#node-input-deployment'
                     + ', #node-input-flushcache');
         break;
@@ -310,6 +313,7 @@
       case 'listModelMetrics':
       case 'listLearningIterations':
       case 'deleteModel':
+      case 'deleteModelV4':
       case 'listModelDeployments':
         fields.push('#node-input-model'
                    + ', #node-input-flushcache');
