@@ -32,6 +32,22 @@ or
 ````
 msg.payload = {values : [[16.4, 48.3, 30, 75.4, 28.9, 20], [13.4, 38.3, 30, 75.4, 18.9, 25]] };
 ````
+or
+````
+msg.payload = {"input_data":
+                [
+                  {
+                    "fields" :
+                      ["COLUMN1","COLUMN2","COLUMN3","COLUMN4","COLUMN5","COLUMN6"],
+                    "values" :
+                      [
+                        [16.4, 48.3, 30, 75.4, 28.9, 20],
+                        [2.99, 7.06, 70, 8.05, 87.7, 32]
+                      ]
+                  }
+                ]
+              };
+````
 in this way the fields parameter can also be provided.
 
 ### Output
@@ -48,4 +64,4 @@ For simple typos and fixes please just raise an issue pointing out our mistakes.
 
 ## Copyright and license
 
-Copyright 2018 IBM Corp. under the Apache 2.0 license.
+Copyright 2018, 2020 IBM Corp. under the Apache 2.0 license.
