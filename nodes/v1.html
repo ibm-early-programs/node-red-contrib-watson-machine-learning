@@ -89,6 +89,11 @@
   goto <a href="http://watson-ml-api.mybluemix.net">API Documentation
   </a>.</p>
 
+  <p> Both V3 and V4 generated models and deployments are supported. Methods
+    marked as V3 or V4 will only work with V3 or V4 models / deployments. All
+    other methods will work with both V3 and V4 models and deployments.
+  </p>
+
   <p>The following methods are supported
     <ul>
       <li>Service Instance Details
@@ -194,6 +199,25 @@
           or as an object
           <p>
             EG. <code>msg.payload = {values:[[16.4, 48.3, 30, 75.4, 28.9, 20]]};</code>
+          </p>
+          or as an input_data object
+          <p>
+            EG.
+            <code>
+              msg.payload = {"input_data":
+                              [
+                                {
+                                  "fields" :
+                                    ["COLUMN1","COLUMN2","COLUMN3","COLUMN4","COLUMN5","COLUMN6"],
+                                  "values" :
+                                    [
+                                      [16.4, 48.3, 30, 75.4, 28.9, 20],
+                                      [2.99, 7.06, 70, 8.05, 87.7, 32]
+                                    ]
+                                }
+                              ]
+                            };
+            </code>
           </p>
           Using an object allows you to provide fields also.
           The number of values in the array, must match the expected inputs for your

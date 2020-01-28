@@ -73,12 +73,22 @@ module.exports = function(RED) {
     switch (m) {
       case 'runPrediction':
         if (! msg.payload) {
-          message = 'Values and Optional fields are required to run a prediction';
+          message = 'Input_Data or Values and Optional fields are required to run a prediction';
         } else if (Array.isArray(msg.payload)) {
-          // allow values to be provided as a straight array.
-          params.values = msg.payload;
+          if (0 === msg.payload.length) {
+            message = 'zero length array is not valid input data for a prediction';
+          } else if (Array.isArray(msg.payload[0])) {
+            // allow values to be provided as a straight array, of arrays
+            params.values = msg.payload;
+          } else {
+            // wrap the single array values in another array
+            params.values = [msg.payload];              
+          }
+
         } else if ('object' !== typeof msg.payload) {
-          message = 'Values need to be provided either as an array or as an object'
+          message = 'Input_Data needs to be provided either as an array or as an object'
+        } else if (msg.payload.input_data) {
+          params.input_data = msg.payload.input_data;
         } else {
           if (msg.payload.values) {
             params.values = msg.payload.values;
@@ -422,13 +432,18 @@ module.exports = function(RED) {
     // A V4 Type Prediction will work for both V3 and V4 deployments
     let uriAddress = cn.host + '/v4/deployments/'
                         + params.deployment + '/predictions';
+    let V4Params = {};
 
-    let dParams = {values : params.values};
-    if (params.fields) {
-      dParams.fields = params.fields;
+    if (params.input_data) {
+      v4Params = {'input_data' : params.input_data};
+    } else {
+      let dParams = {values : params.values};
+      if (params.fields) {
+        dParams.fields = params.fields;
+      }
+      v4Params = {'input_data' : [dParams]};
     }
 
-    let v4Params = {'input_data' : [dParams]};
 
     return executePostRequestV4Style(uriAddress, t, v4Params, cn.instanceid);
   }
