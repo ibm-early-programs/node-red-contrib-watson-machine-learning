@@ -21,22 +21,15 @@
     </div>
 
     <div class="form-row">
-        <label for="node-config-input-username"><i class="fa fa-user"></i> Username</label>
-        <input type="text" id="node-config-input-username">
-    </div>
-    <div class="form-row">
-        <label for="node-config-input-password"><i class="fa fa-lock"></i> Password</label>
-        <input type="password" id="node-config-input-password">
+        <label for="node-config-input-apikey"><i class="fa fa-user"></i> API Key</label>
+        <input type="text" id="node-config-input-apikey">
     </div>
 
     <div class="form-row">
         <label for="node-config-input-host"><i class="fa fa-bookmark"></i> Host URL</label>
         <input class="input-append-left" type="text" id="node-config-input-host">
     </div>
-    <div class="form-row">
-        <label for="node-config-input-accesskey"><i class="fa fa-lock"></i> Access Key</label>
-        <input class="input-append-left" type="text" id="node-config-input-accesskey">
-    </div>
+
     <div class="form-row">
         <label for="node-config-input-instanceid"><i class="fa fa-id-badge"></i> Instance ID</label>
         <input class="input-append-left" type="text" id="node-config-input-instanceid">
@@ -51,16 +44,14 @@
         color: "rgb(180, 50, 50)",
         defaults: {
             host: {value:"", required:true},
-            accesskey: {value:"", required:false},
             instanceid: {value:"", required:true},
             name: {value:""}
         },
         credentials: {
-            username: {type:"text"},
-            password: {type:"password"}
+            apikey: {type:"password", required:true}
         },
         label: function() {
-            return this.name || this.host;
+            return this.name || this.instanceid;
         }
     });
 </script>

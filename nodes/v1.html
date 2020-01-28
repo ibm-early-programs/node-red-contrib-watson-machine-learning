@@ -31,16 +31,23 @@
       <select type="text" id="node-input-wml-mode" style="display: inline-block; width: 70%;">
           <option value="instanceDetails">Service Instance Details</option>
           <option disabled>______________</option>
-          <option value="listModels">List Published Models</option>
-          <option value="getModelDetails">Get Model Details</option>
+          <option value="listModels">V3 List Published Models</option>
+          <option value="getModelDetails">V3 Get Model Details</option>
+          <option value="listModelsV4">V4 List Published Models</option>
+          <option value="getModelDetailsV4">V4 Get Model Details</option>
           <option value="listModelMetrics">List Model Metrics</option>
           <option value="listLearningIterations">List Model Learning Iterations</option>
           <option disabled>______________</option>
-          <option value="listModelDeployments">List Model Deployments</option>
-          <option value="getDeploymentDetails">Get Deployment Details</option>
+          <option value="listAllDeployments">V3 List All Deployments</option>
+          <option value="listModelDeployments">V3 List Model Deployments</option>
+          <option value="getDeploymentDetails">V3 Get Deployment Details</option>
+          <option value="listAllDeploymentsV4">V4 List All Deployments</option>
+          <option value="getDeploymentDetailsV4">V4 Get Deployment Details</option>
           <option disabled>______________</option>
-          <option value="deleteModel">Delete Model</option>
-          <option value="deleteDeployment">Delete Model Deployment</option>
+          <option value="deleteModel">V3 Delete Model</option>
+          <option value="deleteDeployment">V3 Delete Model Deployment</option>
+          <option value="deleteModelV4">V4 Delete Model</option>
+          <option value="deleteDeploymentV4">V4 Delete Deployment</option>
           <option disabled>______________</option>
           <option value="runPrediction">Run Prediction</option>
       </select>
@@ -81,6 +88,11 @@
   <p>For more information about the service API,
   goto <a href="http://watson-ml-api.mybluemix.net">API Documentation
   </a>.</p>
+
+  <p> Both V3 and V4 generated models and deployments are supported. Methods
+    marked as V3 or V4 will only work with V3 or V4 models / deployments. All
+    other methods will work with both V3 and V4 models and deployments.
+  </p>
 
   <p>The following methods are supported
     <ul>
@@ -188,7 +200,26 @@
           <p>
             EG. <code>msg.payload = {values:[[16.4, 48.3, 30, 75.4, 28.9, 20]]};</code>
           </p>
-          Using an object allows you to provide fields also. 
+          or as an input_data object
+          <p>
+            EG.
+            <code>
+              msg.payload = {"input_data":
+                              [
+                                {
+                                  "fields" :
+                                    ["COLUMN1","COLUMN2","COLUMN3","COLUMN4","COLUMN5","COLUMN6"],
+                                  "values" :
+                                    [
+                                      [16.4, 48.3, 30, 75.4, 28.9, 20],
+                                      [2.99, 7.06, 70, 8.05, 87.7, 32]
+                                    ]
+                                }
+                              ]
+                            };
+            </code>
+          </p>
+          Using an object allows you to provide fields also.
           The number of values in the array, must match the expected inputs for your
           machine learning model.
         </p>
@@ -222,6 +253,8 @@
 
   var wml01 = new WML01();
   wml01.models = null;
+  wml01.deployments = null;
+  wml01.v4deployments = false;
 
   wml01.model_selected = $('#node-input-modelhidden').val();
   wml01.deployment_selected = $('#node-input-deploymenthidden').val();
@@ -264,7 +297,6 @@
 
   wml01.processSelectedModel = function(model) {
     var found = false;
-
     if (wml01.models) {
       wml01.models.forEach (function(m) {
         if (m.guid === model && m.deployments) {
@@ -272,10 +304,9 @@
         }
       });
       if (!found) {
-        wml01.fetchDeployments(model);
-      } else {
-        wml01.populateDeploymentList(model);
+        wml01.matchDeploymentsToModels();
       }
+      wml01.rebuildDeploymentList();
     }
   }
 
@@ -287,6 +318,14 @@
     switch (method) {
       case 'instanceDetails':
       case 'listModels':
+      case 'listModelsV4':
+      case 'listAllDeployments':
+      case 'listAllDeploymentsV4':
+        break;
+      case 'getDeploymentDetailsV4':
+      case 'deleteDeploymentV4':
+        fields.push('#node-input-deployment'
+                    + ', #node-input-flushcache');
         break;
       case 'runPrediction':
       case 'getDeploymentDetails':
@@ -294,9 +333,11 @@
         fields.push('#node-input-deployment');
         // deliberate no break
       case 'getModelDetails':
+      case 'getModelDetailsV4':
       case 'listModelMetrics':
       case 'listLearningIterations':
       case 'deleteModel':
+      case 'deleteModelV4':
       case 'listModelDeployments':
         fields.push('#node-input-model'
                    + ', #node-input-flushcache');
@@ -307,6 +348,8 @@
 
   wml01.flushCache = function () {
     wml01.models = null;
+    wml01.deployments = null;
+    wml01.v4deployments = false;
     wml01oneditprepare();
   }
 
@@ -357,7 +400,13 @@
           }
         }).fail(function (err) {
           console.log(err);
-        }).always(function () {});
+        }).always(function () {
+          if (wml01.deployments) {
+            wml01.rebuildDeploymentList();
+          } else {
+            wml01.fetchDeployments();
+          }
+        });
     }
   }
 
@@ -373,42 +422,74 @@
     return pos;
   }
 
-  wml01.fetchDeployments = function (model) {
+  wml01.matchDeploymentsToModels = function () {
+    if (wml01.deployments && wml01.models) {
+      wml01.deployments.forEach((d) => {
+        if (d.model) {
+          let pos = wml01.modelIndex(d.model);
+          if (pos >=0) {
+            if (!wml01.models[pos]['deployments']) {
+              wml01.models[pos]['deployments'] = [];
+            }
+            wml01.models[pos]['deployments'].push(d);
+          }
+        } else {
+          wml01.v4deployments = true;
+        }
+      });
+    }
+  }
+
+  wml01.fetchDeployments = function () {
     var cn = $('#node-input-connection').val();
-    var connection = {cn: cn, model: model};
+    var connection = {cn: cn};
 
     $.getJSON('wml/deployments/', connection)
       .done(function (data) {
         if (data.deployments) {
-          var pos = wml01.modelIndex(model);
-          if (pos >= 0) {
-            wml01.models[pos]['deployments'] = data.deployments;
-          }
-          wml01.populateDeploymentList(model);
+          wml01.deployments = data.deployments;
+          //var pos = wml01.modelIndex(model);
+          wml01.matchDeploymentsToModels();
+
+          //wml01.populateDeploymentList(model);
         }
       }).fail(function (err) {
         console.log(err);
-      }).always(function () {});
+      }).always(function () {
+        wml01.rebuildDeploymentList();
+      });
   }
 
-  wml01.populateDeploymentList = function (model) {
+  wml01.addDeploymentToList = function(d) {
+    var selectedText = '';
+    if (wml01.deployment_selected === d.guid) {
+      selectedText = 'selected="selected"';
+    }
+    $('select#node-input-deployment')
+      .append('<option value='
+                    + '"' + d.guid + '"'
+                    + selectedText
+                    + '>'
+                    + d.name
+                    + '</option>');
+  }
+
+  wml01.rebuildDeploymentList = function () {
+    let model = $('#node-input-model').val();
     $('select#node-input-deployment').empty();
-    var pos = wml01.modelIndex(model);
-    if (pos >= 0) {
-      // Flush out the list first
-      wml01.models[pos]['deployments'].forEach( function (d) {
-        var selectedText = '';
-        if (wml01.deployment_selected === d.guid) {
-          selectedText = 'selected="selected"';
-        }
-        $('select#node-input-deployment')
-          .append('<option value='
-                        + '"' + d.guid + '"'
-                        + selectedText
-                        + '>'
-                        + d.name
-                        + '</option>');
-      })
+
+    if (wml01.v4deployments) {
+        wml01.deployments.forEach ((d) => {
+          wml01.addDeploymentToList(d);
+        });
+    } else {
+      let pos = wml01.modelIndex(model);
+      if (pos >= 0 && wml01.models[pos]['deployments']) {
+        // Flush out the list first
+        wml01.models[pos]['deployments'].forEach((d) => {
+          wml01.addDeploymentToList(d);
+        });
+      }
     }
   }
 
@@ -421,6 +502,11 @@
     } else {
       wml01.fetchModels();
     }
+//    if (wml01.deployments) {
+//      //wml01.rebuildDeploymentList();
+//    } else {
+//      wml01.fetchDeployments();
+//    }
   }
 
   function wml01oneditsave(){
