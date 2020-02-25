@@ -82,7 +82,7 @@ module.exports = function(RED) {
             params.values = msg.payload;
           } else {
             // wrap the single array values in another array
-            params.values = [msg.payload];              
+            params.values = [msg.payload];
           }
 
         } else if ('object' !== typeof msg.payload) {
@@ -258,16 +258,21 @@ module.exports = function(RED) {
         } else if (error) {
           reject(error);
         } else {
-          let errordata = JSON.parse(body);
-          //console.log(errordata);
-          if (errordata.errors &&
-                 Array.isArray(errordata.errors) &&
-                 errordata.errors.length &&
-                 errordata.errors[0].message) {
-            reject('Error ' + response.statusCode + ' ' + errordata.errors[0].message);
-          } else {
-            reject('Error performing request ' + response.statusCode);
+          try {
+            let errordata = JSON.parse(body);
+            //console.log(errordata);
+            if (errordata.errors &&
+                   Array.isArray(errordata.errors) &&
+                   errordata.errors.length &&
+                   errordata.errors[0].message) {
+              reject('Error ' + response.statusCode + ' ' + errordata.errors[0].message);
+            } else {
+              reject('Error performing request ' + response.statusCode);
+            }
+          } catch (e) {
+            reject(body);
           }
+
         }
       });
     });
